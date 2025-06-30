@@ -9,98 +9,144 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         :root {
-            --primary-color: #D32F2F; --secondary-color: #9E9E9E; --light-grey: #E0E0E0;
-            --dark-grey: #424242; --white: #FFFFFF; --accent-color: #1976D2;
+            --primary-color: #D32F2F; --secondary-color: #9E9E9E; --light-grey: #F5F5F5;
+            --dark-grey: #424242; --white: #FFFFFF; --accent-color: #1976D2; --danger-color: #E57373;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background-color: var(--light-grey); color: var(--dark-grey); height: 100vh; overflow-x: hidden; touch-action: manipulation; }
-        .header { background-color: var(--primary-color); color: var(--white); padding: 1rem; text-align: center; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); position: sticky; top: 0; z-index: 100; }
-        .sidebar { background-color: var(--white); padding: 1rem; box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1); order: 2; max-height: 50vh; overflow-y: auto; }
-        .main-content { flex: 1; display: flex; justify-content: center; align-items: center; background-color: var(--light-grey); order: 1; min-height: 50vh; position: relative; }
-        .image-preview img, .image-preview canvas { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+        body { background-color: var(--light-grey); color: var(--dark-grey); }
+        .app-container { display: flex; flex-direction: column; height: 100vh; }
+        .header { background-color: var(--primary-color); color: var(--white); padding: 1rem; text-align: center; flex-shrink: 0; }
+        
+        /* Contenedor principal rediseñado */
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Previsualización pequeña en la parte superior */
+        .preview-pane {
+            flex-basis: 40vh; /* Ocupa el 40% de la altura de la vista */
+            flex-shrink: 0;
+            background-color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            border-bottom: 2px solid #ccc;
+        }
+        .preview-pane img, .preview-pane canvas {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .placeholder { padding: 1rem; text-align: center; color: var(--secondary-color); }
         #canvas { display: none; }
         .cropping-mode #canvas { cursor: crosshair; border: 2px solid var(--accent-color); }
-        .placeholder { padding: 2rem; color: var(--secondary-color); text-align: center; }
-        .form-group { margin-bottom: 1rem; }
+
+        /* Panel de controles con scroll */
+        .controls-pane {
+            flex-grow: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            background-color: var(--white);
+        }
+
+        .form-group { margin-bottom: 1.25rem; }
         .channel-group { border: 2px solid var(--accent-color); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
         label { display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem; }
         input[type="text"], input[type="number"], select { width: 100%; padding: 0.75rem; border: 1px solid var(--secondary-color); border-radius: 8px; font-size: 1rem; }
         input[type="file"] { display: none; }
-        .file-upload { background-color: var(--dark-grey); color: var(--white); padding: 0.75rem; text-align: center; border-radius: 8px; cursor: pointer; transition: all 0.3s; width: 100%; }
-        .btn { display: block; width: 100%; padding: 0.75rem; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: all 0.3s; margin-top: 0.5rem; }
+        
+        .btn { display: block; width: 100%; padding: 0.85rem; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-top: 0.5rem; }
         .btn-primary { background-color: var(--primary-color); color: var(--white); }
         .btn-secondary { background-color: var(--accent-color); color: var(--white); }
+        .btn-dark { background-color: var(--dark-grey); color: var(--white); }
+        .btn-danger { background-color: var(--danger-color); color: var(--white); }
         .btn:disabled { background-color: var(--secondary-color); cursor: not-allowed; transform: none; }
+        .btn:not(:disabled):active { transform: scale(0.98); }
+
+        .button-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+
         hr { border: none; border-top: 1px solid var(--light-grey); margin: 1.5rem 0; }
         .color-select { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
-        .color-option { width: 35px; height: 35px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: all 0.3s; }
+        .color-option { width: 35px; height: 35px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: all 0.2s; }
         .color-option.selected { border-color: var(--primary-color); transform: scale(1.1); }
-        input[type="range"] { width: 100%; -webkit-appearance: none; margin: 0.5rem 0; background: var(--light-grey); height: 8px; border-radius: 5px; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; border-radius: 50%; background: var(--primary-color); cursor: pointer; }
+        input[type="range"] { width: 100%; }
+        
         .mobile-alert { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1001; background-color: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.3); max-width: 90%; text-align: center; display: none; }
-        .mobile-alert.show { display: block; }
+        .mobile-alert.show { display: block; animation: fadeIn 0.2s ease; }
         .alert-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5); z-index: 1000; display: none; }
-        .alert-backdrop.show { display: block; }
+        .alert-backdrop.show { display: block; animation: fadeIn 0.2s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
-    <div class="header"><h1>APLICACIÓN CÁMARA LOGIN BUREAU VERITAS CPS LUGO</h1></div>
-    <div class="container">
-        <div class="sidebar">
-            <div class="channel-group">
-                <label for="channelId">Código de Sala (4 dígitos):</label>
-                <input type="number" id="channelId" placeholder="Ej: 1234" maxlength="4" oninput="if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);">
-                <button id="connectBtn" class="btn btn-secondary">Conectar a Sala</button>
-                <div id="status" style="font-size: 0.8rem; margin-top: 0.5rem; text-align: center;">Desconectado</div>
-            </div>
-
-            <label for="fileInput" class="file-upload touch-target">📷 CAPTURAR IMAGEN</label>
-            <input type="file" id="fileInput" accept="image/*" capture="environment">
-            <div id="fileName" class="filename" style="font-size: 0.8rem; margin-top: 0.5rem; word-break: break-all;">No se ha seleccionado ninguna imagen</div>
-
-            <button id="sendBtn" class="btn btn-primary" disabled>📲 Enviar a Ordenador</button>
-            
-            <hr>
-
-            <div id="editControls" style="display:none;">
-                <div class="form-group">
-                    <label for="textInput">Texto a añadir:</label>
-                    <input type="text" id="textInput" placeholder="REQUEST" autocomplete="off">
-                </div>
-                <div class="form-group">
-                    <label for="fontSizeInput">Tamaño de fuente:</label>
-                    <input type="range" id="fontSizeInput" min="12" max="250" value="48" class="touch-target">
-                </div>
-                <div class="form-group">
-                    <label>Color del texto:</label>
-                    <div class="color-select">
-                        <div class="color-option selected touch-target" style="background-color: white;" data-color="white"></div>
-                        <div class="color-option touch-target" style="background-color: black;" data-color="black"></div>
-                    </div>
-                </div>
-                 <div class="form-group">
-                    <label for="positionSelect">Posición del texto:</label>
-                    <select id="positionSelect">
-                        <option value="top-left">Superior izquierda</option>
-                        <option value="top-right">Superior derecha</option>
-                        <option value="bottom-left">Inferior izquierda</option>
-                        <option value="bottom-right" selected>Inferior derecha</option>
-                    </select>
-                </div>
-                <button id="cropBtn" class="btn btn-secondary" disabled>✂️ Recortar Imagen</button>
-                <button id="downloadBtn" class="btn btn-primary" disabled>💾 Descargar Imagen</button>
-            </div>
-        </div>
-        <div class="main-content">
-            <div class="image-preview">
+    <div class="app-container">
+        <header class="header"><h1>CÁMARA LOGIN - Mobile</h1></header>
+        
+        <main class="main-content">
+            <section class="preview-pane">
                 <img id="previewImage" style="display: none;" />
                 <canvas id="canvas"></canvas>
                 <div class="placeholder" id="placeholderText">
-                    <p>Introduce un código de sala y pulsa "Conectar"</p>
+                    <p>Conéctate a una sala para empezar</p>
                 </div>
-            </div>
-        </div>
+            </section>
+            
+            <section class="controls-pane">
+                <div class="channel-group">
+                    <label for="channelId">Código de Sala (4 dígitos):</label>
+                    <input type="number" id="channelId" placeholder="Ej: 1234" maxlength="4" oninput="if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);">
+                    <button id="connectBtn" class="btn btn-secondary">Conectar a Sala</button>
+                    <div id="status" style="font-size: 0.8rem; margin-top: 0.5rem; text-align: center;">Desconectado</div>
+                </div>
+
+                <div id="captureSection">
+                    <label for="fileInput" class="btn btn-dark">📷 CAPTURAR IMAGEN</label>
+                    <input type="file" id="fileInput" accept="image/*" capture="environment">
+                </div>
+
+                <div id="actionControls" style="display:none;">
+                     <hr>
+                    <div class="form-group">
+                        <label for="textInput">Texto a añadir (será el nombre del archivo):</label>
+                        <input type="text" id="textInput" placeholder="Ej: REQUEST-12345" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="fontSizeInput">Tamaño de fuente:</label>
+                        <input type="range" id="fontSizeInput" min="12" max="250" value="48">
+                    </div>
+                    <div class="form-group">
+                        <label>Color del texto:</label>
+                        <div class="color-select">
+                            <div class="color-option selected" style="background-color: white;" data-color="white"></div>
+                            <div class="color-option" style="background-color: black;" data-color="black"></div>
+                        </div>
+                    </div>
+                     <div class="form-group">
+                        <label for="positionSelect">Posición del texto:</label>
+                        <select id="positionSelect">
+                            <option value="top-left">Superior Izquierda</option>
+                            <option value="top-right">Superior Derecha</option>
+                            <option value="bottom-left">Inferior Izquierda</option>
+                            <option value="bottom-right" selected>Inferior Derecha</option>
+                        </select>
+                    </div>
+
+                    <hr>
+                    <div class="button-grid">
+                        <button id="sendBtn" class="btn btn-primary" disabled>📲 Enviar</button>
+                        <button id="downloadBtn" class="btn btn-primary" disabled>💾 Descargar</button>
+                        <button id="cropBtn" class="btn btn-secondary" disabled>✂️ Recortar</button>
+                        <button id="discardBtn" class="btn btn-danger">🗑️ Descartar</button>
+                    </div>
+                </div>
+            </section>
+        </main>
     </div>
+
     <div class="alert-backdrop" id="alertBackdrop"></div>
     <div class="mobile-alert" id="mobileAlert">
         <p id="alertMessage"></p>
@@ -110,14 +156,14 @@
     <script>
     // --- PEGA TU CONFIGURACIÓN DE FIREBASE AQUÍ ---
     const firebaseConfig = {
-      // Reemplaza esto con tu objeto de configuración real de Firebase
-      apiKey: "AIzaSy...xxxxxxxxxxxx",
-      authDomain: "tu-proyecto.firebaseapp.com",
-      databaseURL: "https://tu-proyecto-default-rtdb.firebaseio.com",
-      projectId: "tu-proyecto",
-      storageBucket: "tu-proyecto.appspot.com",
-      messagingSenderId: "1234567890",
-      appId: "1:1234567890:web:xxxxxxxxxxxx"
+      apiKey: "AIzaSyAbahVsQxI_HOz_yPtDlp4hXSdZO0dvRl4",
+      authDomain: "camara-app-lugo.firebaseapp.com",
+      databaseURL: "https://camara-app-lugo-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "camara-app-lugo",
+      storageBucket: "camara-app-lugo.appspot.com",
+      messagingSenderId: "437448426207",
+      appId: "1:437448426207:web:a9dbecc8cbdb77d0c4df6a",
+      measurementId: "G-HXTN98NTPS"
     };
     // --------------------------------------------------------
 
@@ -125,10 +171,10 @@
     const database = firebase.database();
 
     const channelIdInput = document.getElementById('channelId'), connectBtn = document.getElementById('connectBtn'), statusDiv = document.getElementById('status');
-    const fileInput = document.getElementById('fileInput'), fileName = document.getElementById('fileName');
-    const sendBtn = document.getElementById('sendBtn'), editControls = document.getElementById('editControls');
+    const fileInput = document.getElementById('fileInput'), captureSection = document.getElementById('captureSection');
+    const actionControls = document.getElementById('actionControls'), sendBtn = document.getElementById('sendBtn');
     const textInput = document.getElementById('textInput'), fontSizeInput = document.getElementById('fontSizeInput'), colorOptions = document.querySelectorAll('.color-option'), positionSelect = document.getElementById('positionSelect');
-    const downloadBtn = document.getElementById('downloadBtn'), cropBtn = document.getElementById('cropBtn');
+    const downloadBtn = document.getElementById('downloadBtn'), cropBtn = document.getElementById('cropBtn'), discardBtn = document.getElementById('discardBtn');
     const previewImage = document.getElementById('previewImage'), placeholderText = document.getElementById('placeholderText');
     const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
     const mobileAlert = document.getElementById('mobileAlert'), alertBackdrop = document.getElementById('alertBackdrop'), alertMessage = document.getElementById('alertMessage'), alertOk = document.getElementById('alertOk');
@@ -139,42 +185,53 @@
     function showAlert(message) { alertMessage.textContent = message; alertBackdrop.classList.add('show'); mobileAlert.classList.add('show'); }
     function hideAlert() { alertBackdrop.classList.remove('show'); mobileAlert.classList.remove('show'); }
 
-    function setUIState(isConnected, isLoading = false) {
-        channelIdInput.disabled = isConnected || isLoading;
-        connectBtn.disabled = isLoading;
-        connectBtn.textContent = isConnected ? 'Desconectar' : 'Conectar a Sala';
-        statusDiv.textContent = isLoading ? 'Conectando...' : (isConnected ? `Conectado a sala: ${channelIdInput.value}` : 'Desconectado');
-        statusDiv.style.color = isConnected ? 'green' : 'red';
-        
+    function setUIState() {
+        const isConnected = !!currentChannelRef;
         const hasImage = !!currentImage;
         const isEditing = isCropping;
+
+        // Grupo de conexión
+        channelIdInput.disabled = isConnected;
+        connectBtn.textContent = isConnected ? 'Desconectar' : 'Conectar a Sala';
+        statusDiv.textContent = isConnected ? `Conectado a sala: ${channelIdInput.value}` : 'Desconectado';
+        statusDiv.style.color = isConnected ? 'green' : 'red';
+        
+        // Visibilidad de secciones
+        captureSection.style.display = isConnected && !hasImage ? 'block' : 'none';
+        actionControls.style.display = hasImage ? 'block' : 'none';
+        placeholderText.style.display = hasImage ? 'none' : 'block';
+
+        // Estado de botones de acción
         sendBtn.disabled = !isConnected || !hasImage || isEditing;
         downloadBtn.disabled = !hasImage || isEditing;
         cropBtn.disabled = !hasImage || isEditing;
-        editControls.style.display = hasImage ? 'block' : 'none';
-        placeholderText.style.display = hasImage ? 'none' : 'block';
-
-        if (!hasImage && !isConnected) placeholderText.textContent = 'Introduce un código de sala y pulsa "Conectar"';
-        else if (!hasImage && isConnected) placeholderText.textContent = 'Captura una imagen para enviarla';
+        
+        if (!isConnected) placeholderText.textContent = 'Conéctate a una sala para empezar.';
+        else if (!hasImage) placeholderText.textContent = 'Captura una imagen.';
     }
 
     function connectToChannel() {
         const channelId = channelIdInput.value;
+        if (currentChannelRef) {
+            currentChannelRef.off(); currentChannelRef = null; setUIState(); return;
+        }
         if (!channelId || channelId.length !== 4) { showAlert("Por favor, introduce un código de sala de 4 dígitos."); return; }
-        if (currentChannelRef) { currentChannelRef.off(); currentChannelRef = null; setUIState(false); return; }
-        setUIState(false, true);
+        
+        statusDiv.textContent = 'Conectando...';
         currentChannelRef = database.ref('channels/' + channelId);
         currentChannelRef.on('value', (snapshot) => {
             const data = snapshot.val();
-            if (data && data.imageData && currentImage !== data.imageData) {
-                currentImage = data.imageData;
-                originalImageOnLoad = currentImage;
-                fileName.textContent = data.fileName || 'Imagen recibida';
-                processAndDisplayImage();
-                showAlert("¡Nueva imagen recibida!");
+            if (data && data.imageData) {
+                // Solo actualiza si es una imagen nueva para evitar bucles
+                if (btoa(currentImage) !== btoa(data.imageData)) {
+                    currentImage = data.imageData;
+                    originalImageOnLoad = currentImage;
+                    processAndDisplayImage();
+                    showAlert("¡Nueva imagen recibida!");
+                }
             }
-            if(!statusDiv.textContent.includes('Conectado')) setUIState(true);
-        }, (error) => { showAlert("Error de conexión: " + error.message); setUIState(false); });
+            if(!statusDiv.textContent.includes('Conectado')) setUIState();
+        }, (error) => { showAlert("Error de conexión: " + error.message); currentChannelRef = null; setUIState(); });
     }
 
     function sendImageToChannel() {
@@ -186,17 +243,17 @@
             reader.onload = (event) => {
                 currentChannelRef.set({
                     imageData: event.target.result,
-                    fileName: fileName.textContent,
                     timestamp: Date.now()
-                }).then(() => { showAlert("¡Imagen enviada con éxito!"); sendBtn.disabled = false; })
-                  .catch(error => { showAlert("Error al enviar: " + error.message); sendBtn.disabled = false; });
+                }).then(() => { showAlert("¡Imagen enviada con éxito!"); })
+                  .catch(error => { showAlert("Error al enviar: " + error.message); })
+                  .finally(() => { sendBtn.disabled = false; });
             };
             reader.readAsDataURL(blob);
         }, 'image/jpeg', 0.9);
     }
-
+    
     function processAndDisplayImage() {
-        if (!currentImage) { setUIState(!!currentChannelRef); return; }
+        if (!currentImage) return;
         const img = new Image();
         img.onload = () => {
             canvas.width = img.width; canvas.height = img.height;
@@ -204,7 +261,6 @@
             const text = textInput.value || '';
             if (text.trim()) {
                 const fontSize = parseInt(fontSizeInput.value);
-                const position = positionSelect.value;
                 ctx.font = `bold ${fontSize}px Arial`;
                 ctx.fillStyle = selectedColor;
                 ctx.strokeStyle = selectedColor === 'white' ? 'black' : 'white';
@@ -212,26 +268,36 @@
                 const padding = Math.max(20, fontSize / 2);
                 const textMetrics = ctx.measureText(text);
                 let x, y;
-                switch (position) {
+                switch (positionSelect.value) {
                     case 'top-left': x = padding; y = fontSize + padding; break;
                     case 'top-right': x = canvas.width - textMetrics.width - padding; y = fontSize + padding; break;
                     case 'bottom-left': x = padding; y = canvas.height - padding; break;
                     default: x = canvas.width - textMetrics.width - padding; y = canvas.height - padding; break;
                 }
-                ctx.strokeText(text, x, y);
-                ctx.fillText(text, x, y);
+                ctx.strokeText(text, x, y); ctx.fillText(text, x, y);
             }
             if(!isCropping) {
-                previewImage.style.display = 'block';
-                canvas.style.display = 'none';
+                previewImage.style.display = 'block'; canvas.style.display = 'none';
                 previewImage.src = canvas.toDataURL('image/png');
             } else {
-                previewImage.style.display = 'none';
-                canvas.style.display = 'block';
+                previewImage.style.display = 'none'; canvas.style.display = 'block';
             }
-            setUIState(!!currentChannelRef);
+            setUIState();
         };
         img.src = currentImage;
+    }
+
+    function discardImage() {
+        originalImageOnLoad = null;
+        currentImage = null;
+        textInput.value = '';
+        previewImage.style.display = 'none';
+        canvas.style.display = 'none';
+        if (isCropping) {
+            isCropping = false;
+            cropBtn.textContent = '✂️ Recortar Imagen';
+        }
+        setUIState();
     }
 
     fileInput.addEventListener('change', e => {
@@ -241,7 +307,6 @@
             reader.onload = e => {
                 originalImageOnLoad = e.target.result;
                 currentImage = originalImageOnLoad;
-                fileName.textContent = file.name || `captura_${Date.now()}.jpg`;
                 processAndDisplayImage();
             };
             reader.readAsDataURL(file);
@@ -250,29 +315,30 @@
 
     cropBtn.addEventListener('click', () => {
         isCropping = !isCropping;
-        cropBtn.textContent = isCropping ? '✅ Aplicar Recorte / ❌ Cancelar' : '✂️ Recortar Imagen';
+        cropBtn.textContent = isCropping ? '✅ Aplicar / ❌ Cancelar' : '✂️ Recortar Imagen';
         if(isCropping) {
             currentImage = originalImageOnLoad;
             showAlert('Arrastra sobre la imagen para seleccionar. Vuelve a pulsar el botón para aplicar o cancelar.');
+        } else if (selectingArea) {
+            handleCropSelectionEnd(); // Si se estaba seleccionando, aplica el recorte
         } else {
-            // Se pulsó "Aplicar / Cancelar". La lógica de recorte está en `handleCropSelectionEnd`.
-            // Si no se seleccionó nada, simplemente salimos del modo.
             showAlert('Modo recorte desactivado.');
         }
         processAndDisplayImage();
-        updateInterface();
+        setUIState();
     });
 
     function handleCropSelectionStart(e, isTouch = false) { if (!isCropping) return; if (isTouch) e.preventDefault(); selectingArea = true; const rect = canvas.getBoundingClientRect(); const scaleX = canvas.width / rect.width; const scaleY = canvas.height / rect.height; const clientX = isTouch ? e.touches[0].clientX : e.clientX; const clientY = isTouch ? e.touches[0].clientY : e.clientY; cropStartX = (clientX - rect.left) * scaleX; cropStartY = (clientY - rect.top) * scaleY; cropEndX = cropStartX; cropEndY = cropStartY; }
     function handleCropSelectionMove(e, isTouch = false) { if (!isCropping || !selectingArea) return; if (isTouch) e.preventDefault(); const rect = canvas.getBoundingClientRect(); const scaleX = canvas.width / rect.width; const scaleY = canvas.height / rect.height; cropEndX = ((isTouch ? e.touches[0].clientX : e.clientX) - rect.left) * scaleX; cropEndY = ((isTouch ? e.touches[0].clientY : e.clientY) - rect.top) * scaleY; const img = new Image(); img.onload = () => { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0); ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'; ctx.fillRect(0, 0, canvas.width, canvas.height); const x = Math.min(cropStartX, cropEndX); const y = Math.min(cropStartY, cropEndY); const w = Math.abs(cropEndX - cropStartX); const h = Math.abs(cropEndY - cropStartY); ctx.drawImage(img, x, y, w, h, x, y, w, h); }; img.src = originalImageOnLoad; }
     function handleCropSelectionEnd() {
         if (!isCropping || !selectingArea) return;
-        isCropping = false;
-        selectingArea = false;
-        cropBtn.textContent = '✂️ Recortar Imagen';
         const x = Math.min(cropStartX, cropEndX); const y = Math.min(cropStartY, cropEndY);
         const width = Math.abs(cropEndX - cropStartX); const height = Math.abs(cropEndY - cropStartY);
-        if (width < 10 || height < 10) { processAndDisplayImage(); updateInterface(); return; }
+        
+        isCropping = false; selectingArea = false;
+        cropBtn.textContent = '✂️ Recortar Imagen';
+        
+        if (width < 20 || height < 20) { processAndDisplayImage(); setUIState(); return; }
         const tempCanvas = document.createElement('canvas'); tempCanvas.width = width; tempCanvas.height = height;
         const tempCtx = tempCanvas.getContext('2d'); const img = new Image();
         img.onload = () => { tempCtx.drawImage(img, x, y, width, height, 0, 0, width, height); currentImage = tempCanvas.toDataURL('image/jpeg', 0.95); originalImageOnLoad = currentImage; showAlert('Imagen recortada.'); processAndDisplayImage(); };
@@ -281,14 +347,22 @@
 
     [textInput, fontSizeInput, positionSelect].forEach(el => el.addEventListener('input', processAndDisplayImage));
     colorOptions.forEach(option => { option.addEventListener('click', function() { document.querySelector('.color-option.selected').classList.remove('selected'); this.classList.add('selected'); selectedColor = this.dataset.color; processAndDisplayImage(); }); });
-    downloadBtn.addEventListener('click', () => { const link = document.createElement('a'); link.download = (fileName.textContent || 'imagen_editada').replace(/\.[^/.]+$/, "") + ".png"; link.href = canvas.toDataURL('image/png'); link.click(); });
-    alertOk.addEventListener('click', hideAlert);
+    downloadBtn.addEventListener('click', () => {
+        const link = document.createElement('a');
+        const filename = textInput.value.trim() || `imagen_${Date.now()}`;
+        link.download = filename + ".png";
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    });
+
     connectBtn.addEventListener('click', connectToChannel);
     sendBtn.addEventListener('click', sendImageToChannel);
+    discardBtn.addEventListener('click', discardImage);
+    alertOk.addEventListener('click', hideAlert);
     canvas.addEventListener('mousedown', (e) => handleCropSelectionStart(e)); canvas.addEventListener('mousemove', (e) => handleCropSelectionMove(e)); canvas.addEventListener('mouseup', handleCropSelectionEnd);
     canvas.addEventListener('touchstart', (e) => handleCropSelectionStart(e, true)); canvas.addEventListener('touchmove', (e) => handleCropSelectionMove(e, true)); canvas.addEventListener('touchend', handleCropSelectionEnd);
     
-    setUIState(false);
+    setUIState();
     </script>
 </body>
 </html>
