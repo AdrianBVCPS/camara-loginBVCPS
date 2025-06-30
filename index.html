@@ -4,10 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>CÁMARA LOGIN - Mobile</title>
-    <!-- LIBRERÍAS NECESARIAS -->
-    <script src="https://cdn.jsdelivr.net/npm/simple-peer@9.11.1/simplepeer.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+    <!-- SDK de Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         :root {
             --primary-color: #D32F2F; --secondary-color: #9E9E9E; --light-grey: #E0E0E0;
@@ -18,403 +17,234 @@
         .header { background-color: var(--primary-color); color: var(--white); padding: 1rem; text-align: center; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); position: sticky; top: 0; z-index: 100; }
         .sidebar { background-color: var(--white); padding: 1rem; box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1); order: 2; max-height: 50vh; overflow-y: auto; }
         .main-content { flex: 1; display: flex; justify-content: center; align-items: center; background-color: var(--light-grey); order: 1; min-height: 50vh; position: relative; }
-        .image-preview img, .image-preview video, .image-preview canvas { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
-        #canvas, #scannerVideo { display: none; }
-        .cropping-mode #canvas { cursor: crosshair; border: 2px solid var(--primary-color); }
+        .image-preview img, .image-preview canvas { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+        #canvas { display: none; }
         .placeholder { padding: 2rem; color: var(--secondary-color); text-align: center; }
         .form-group { margin-bottom: 1rem; }
+        .channel-group { border: 2px solid var(--accent-color); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
         label { display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem; }
-        input[type="text"], select { width: 100%; padding: 0.75rem; border: 1px solid var(--secondary-color); border-radius: 8px; font-size: 1rem; }
+        input[type="text"], input[type="number"], select { width: 100%; padding: 0.75rem; border: 1px solid var(--secondary-color); border-radius: 8px; font-size: 1rem; }
         input[type="file"] { display: none; }
-        .file-upload { background-color: var(--dark-grey); }
-        .btn-p2p { background-color: var(--accent-color); }
-        .file-upload, .btn-p2p { display: block; color: var(--white); padding: 0.75rem 1rem; text-align: center; border-radius: 8px; cursor: pointer; transition: all 0.3s; margin-bottom: 0.5rem; font-size: 1rem; border: none; width: 100%; }
-        .file-upload:hover, .file-upload:active, .btn-p2p:hover, .btn-p2p:active { opacity: 0.8; transform: scale(0.98); }
-        .filename { font-size: 0.8rem; color: var(--secondary-color); margin-top: 0.5rem; word-break: break-all; }
-        .btn { display: block; width: 100%; padding: 0.75rem; background-color: var(--primary-color); color: var(--white); border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: all 0.3s; margin-top: 0.5rem; }
-        .btn:hover, .btn:active { background-color: #B71C1C; transform: scale(0.98); }
+        .file-upload { background-color: var(--dark-grey); color: var(--white); padding: 0.75rem; text-align: center; border-radius: 8px; cursor: pointer; transition: all 0.3s; width: 100%; }
+        .btn { display: block; width: 100%; padding: 0.75rem; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: all 0.3s; margin-top: 0.5rem; }
+        .btn-primary { background-color: var(--primary-color); color: var(--white); }
+        .btn-secondary { background-color: var(--accent-color); color: var(--white); }
         .btn:disabled { background-color: var(--secondary-color); cursor: not-allowed; transform: none; }
-        .p2p-separator { display: flex; align-items: center; text-align: center; margin: 1rem 0; color: var(--secondary-color); }
-        .p2p-separator::before, .p2p-separator::after { content: ''; flex: 1; border-bottom: 1px solid var(--secondary-color); }
-        .p2p-separator::before { margin-right: .5rem; } .p2p-separator::after { margin-left: .5rem; }
-        .color-select { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
-        .color-option { width: 35px; height: 35px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: all 0.3s; }
-        .color-option.selected { border-color: var(--primary-color); transform: scale(1.1); }
-        input[type="range"] { width: 100%; -webkit-appearance: none; margin: 0.5rem 0; background: var(--light-grey); height: 8px; border-radius: 5px; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; border-radius: 50%; background: var(--primary-color); cursor: pointer; }
-        #qrModal, .mobile-alert { position: fixed; z-index: 1001; }
-        #qrModal { top: 0; left: 0; width: 100%; height: 100%; transform: none; background: rgba(0,0,0,0.9); display: none; flex-direction: column; justify-content: center; align-items: center; padding: 1rem; text-align: center; color: white; }
-        #qrCodeContainer { background: white; padding: 20px; border-radius: 8px; margin-top: 1rem; }
-        #qrModal.show { display: flex; }
-        .mobile-alert { top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.3); max-width: 90%; text-align: center; display: none; }
-        .mobile-alert.show { display: block; }
-        .alert-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5); z-index: 1000; display: none; }
-        .alert-backdrop.show { display: block; }
     </style>
 </head>
 <body>
     <div class="header"><h1>APLICACIÓN CÁMARA LOGIN BUREAU VERITAS CPS LUGO</h1></div>
     <div class="container">
         <div class="sidebar">
-            <div class="form-group">
-                <label for="fileInput" class="file-upload touch-target">📷 CAPTURAR IMAGEN</label>
-                <input type="file" id="fileInput" accept="image/*" capture="environment">
-                <div id="fileName" class="filename">No se ha seleccionado ninguna imagen</div>
+            <!-- SECCIÓN DE CONEXIÓN -->
+            <div class="channel-group">
+                <label for="channelId">Código de Sala (4 dígitos):</label>
+                <input type="number" id="channelId" placeholder="Ej: 1234" maxlength="4" oninput="if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);">
+                <button id="connectBtn" class="btn btn-secondary">Conectar a Sala</button>
+                <div id="status" style="font-size: 0.8rem; margin-top: 0.5rem; text-align: center;">Desconectado</div>
             </div>
 
-            <div class="p2p-separator">Compartir</div>
-            <button id="sendBtn" class="btn-p2p touch-target" disabled>📲 Enviar Imagen HQ</button>
-            <button id="receiveBtn" class="btn-p2p touch-target">💻 Recibir Imagen HQ</button>
-            <div class="p2p-separator"></div>
+            <label for="fileInput" class="file-upload touch-target">📷 CAPTURAR IMAGEN</label>
+            <input type="file" id="fileInput" accept="image/*" capture="environment">
+            <div id="fileName" class="filename" style="font-size: 0.8rem; margin-top: 0.5rem; word-break: break-all;">No se ha seleccionado ninguna imagen</div>
+
+            <!-- Botón para enviar la imagen al canal -->
+            <button id="sendBtn" class="btn btn-primary" disabled>📲 Enviar a Ordenador</button>
             
-            <div class="form-group">
-                <label for="textInput">Texto a añadir:</label>
-                <input type="text" id="textInput" placeholder="REQUEST" autocomplete="off">
-            </div>
-            <div class="form-group">
-                <label for="fontSizeInput">Tamaño de fuente:</label>
-                <input type="range" id="fontSizeInput" min="12" max="250" value="48" class="touch-target">
-            </div>
-            <div class="form-group">
-                <label>Color del texto:</label>
-                <div class="color-select">
-                    <div class="color-option selected touch-target" style="background-color: white;" data-color="white"></div>
-                    <div class="color-option touch-target" style="background-color: black;" data-color="black"></div>
+            <hr style="margin: 1.5rem 0;">
+
+            <!-- Controles de edición (se ocultan hasta tener imagen) -->
+            <div id="editControls" style="display:none;">
+                <div class="form-group">
+                    <label for="textInput">Texto a añadir:</label>
+                    <input type="text" id="textInput" placeholder="REQUEST" autocomplete="off">
                 </div>
+                <button id="downloadBtn" class="btn btn-primary" disabled>💾 Descargar Imagen</button>
             </div>
-             <div class="form-group">
-                <label for="positionSelect">Posición del texto:</label>
-                <select id="positionSelect">
-                    <option value="top-left">Superior izquierda</option>
-                    <option value="top-right">Superior derecha</option>
-                    <option value="bottom-left">Inferior izquierda</option>
-                    <option value="bottom-right" selected>Inferior derecha</option>
-                </select>
-            </div>
-            
-            <button id="downloadBtn" class="btn touch-target" disabled>💾 Descargar Imagen</button>
-            <button id="cropBtn" class="btn touch-target" disabled>✂️ Recortar Imagen</button>
         </div>
         <div class="main-content">
             <div class="image-preview">
                 <img id="previewImage" style="display: none;" />
                 <canvas id="canvas"></canvas>
-                <video id="scannerVideo" playsinline></video>
                 <div class="placeholder" id="placeholderText">
-                    <p>Pulsa "Capturar Imagen" o "Recibir Imagen HQ"</p>
+                    <p>Introduce un código de sala y pulsa "Conectar"</p>
                 </div>
             </div>
         </div>
     </div>
-    <div class="alert-backdrop" id="alertBackdrop"></div>
-    <div class="mobile-alert" id="mobileAlert">
-        <p id="alertMessage"></p>
-        <button id="alertOk" class="btn" style="margin-top: 1rem;">OK</button>
-    </div>
-    <div id="qrModal">
-        <h3 id="qrModalTitle"></h3>
-        <div id="qrCodeContainer"></div>
-        <button id="cancelP2PBtn" class="btn" style="margin-top: 2rem; max-width: 200px;">Cancelar</button>
-    </div>
     
     <script>
-    const fileInput = document.getElementById('fileInput'), fileName = document.getElementById('fileName');
-    const textInput = document.getElementById('textInput'), fontSizeInput = document.getElementById('fontSizeInput'), colorOptions = document.querySelectorAll('.color-option'), positionSelect = document.getElementById('positionSelect');
-    const downloadBtn = document.getElementById('downloadBtn'), cropBtn = document.getElementById('cropBtn');
+    // --- TU CONFIGURACIÓN DE FIREBASE YA INTEGRADA ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyAbahVsQxI_HOz_yPtDlp4hXSdZO0dvRl4",
+      authDomain: "camara-app-lugo.firebaseapp.com",
+      databaseURL: "https://camara-app-lugo-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "camara-app-lugo",
+      storageBucket: "camara-app-lugo.appspot.com",
+      messagingSenderId: "437448426207",
+      appId: "1:437448426207:web:a9dbecc8cbdb77d0c4df6a",
+      measurementId: "G-HXTN98NTPS"
+    };
+    // --------------------------------------------------------
+
+    // Inicializa Firebase
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    // Referencias a elementos DOM
+    const channelIdInput = document.getElementById('channelId');
+    const connectBtn = document.getElementById('connectBtn');
+    const statusDiv = document.getElementById('status');
+    const fileInput = document.getElementById('fileInput');
+    const fileName = document.getElementById('fileName');
+    const sendBtn = document.getElementById('sendBtn');
+    const editControls = document.getElementById('editControls');
+    const textInput = document.getElementById('textInput');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const previewImage = document.getElementById('previewImage');
     const placeholderText = document.getElementById('placeholderText');
     const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
-    const previewImage = document.getElementById('previewImage');
-    const sendBtn = document.getElementById('sendBtn'), receiveBtn = document.getElementById('receiveBtn');
-    const qrModal = document.getElementById('qrModal'), qrModalTitle = document.getElementById('qrModalTitle'), qrCodeContainer = document.getElementById('qrCodeContainer'), cancelP2PBtn = document.getElementById('cancelP2PBtn');
-    const scannerVideo = document.getElementById('scannerVideo');
-    const mobileAlert = document.getElementById('mobileAlert'), alertBackdrop = document.getElementById('alertBackdrop'), alertMessage = document.getElementById('alertMessage'), alertOk = document.getElementById('alertOk');
-
-    let originalImageOnLoad = null, currentImage = null, peer = null, scanner = null;
-    let selectedColor = 'white';
-    let isCropping = false, selectingArea = false, cropStartX = 0, cropStartY = 0, cropEndX = 0, cropEndY = 0;
     
-    const peerConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] };
-    
-    function showAlert(message) { alertMessage.textContent = message; alertBackdrop.classList.add('show'); mobileAlert.classList.add('show'); }
-    function hideAlert() { alertBackdrop.classList.remove('show'); mobileAlert.classList.remove('show'); }
+    let currentImage = null;
+    let currentChannelRef = null;
 
-    function updateInterface() {
-        const hasImage = !!currentImage;
-        const isProcessActive = !!(peer || scanner || isCropping);
-
-        [downloadBtn, cropBtn, sendBtn].forEach(btn => btn.disabled = !hasImage || isProcessActive);
-        receiveBtn.disabled = isProcessActive;
-        [textInput, fontSizeInput, positionSelect, fileInput.labels[0]].forEach(el => {
-            const elementToStyle = el.tagName === 'LABEL' ? el : el;
-            elementToStyle.disabled = isProcessActive;
-            elementToStyle.style.pointerEvents = isProcessActive ? 'none' : 'auto';
-            elementToStyle.style.opacity = isProcessActive ? 0.5 : 1;
-        });
+    function setUIState(isConnected, isLoading = false) {
+        channelIdInput.disabled = isConnected || isLoading;
+        connectBtn.disabled = isLoading;
+        connectBtn.textContent = isConnected ? 'Desconectar' : 'Conectar a Sala';
+        statusDiv.textContent = isLoading ? 'Conectando...' : (isConnected ? `Conectado a sala: ${channelIdInput.value}` : 'Desconectado');
+        statusDiv.style.color = isConnected ? 'green' : 'red';
         
-        placeholderText.style.display = hasImage || scanner ? 'none' : 'block';
-        previewImage.style.display = hasImage && !isCropping && !scanner ? 'block' : 'none';
-        canvas.style.display = isCropping ? 'block' : 'none';
-        scannerVideo.style.display = scanner ? 'block' : 'none';
+        const hasImage = !!currentImage;
+        sendBtn.disabled = !isConnected || !hasImage;
+        downloadBtn.disabled = !hasImage;
+        editControls.style.display = hasImage ? 'block' : 'none';
+        placeholderText.style.display = hasImage ? 'none' : 'block';
+        if (!hasImage && !isConnected) {
+            placeholderText.textContent = 'Introduce un código de sala y pulsa "Conectar"';
+        } else if (!hasImage && isConnected) {
+            placeholderText.textContent = 'Captura una imagen para enviarla';
+        }
+    }
+
+    function connectToChannel() {
+        const channelId = channelIdInput.value;
+        if (!channelId || channelId.length !== 4) {
+            alert("Por favor, introduce un código de sala de 4 dígitos.");
+            return;
+        }
+
+        if (currentChannelRef) {
+            currentChannelRef.off(); 
+            currentChannelRef = null;
+            setUIState(false);
+            return;
+        }
+        
+        setUIState(false, true);
+
+        currentChannelRef = database.ref('channels/' + channelId);
+        currentChannelRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data && data.imageData) {
+                if (currentImage !== data.imageData) { // Evita recargar la misma imagen
+                    currentImage = data.imageData;
+                    fileName.textContent = data.fileName || 'Imagen recibida';
+                    processAndDisplayImage();
+                    alert("¡Nueva imagen recibida!");
+                }
+            }
+            if(!statusDiv.textContent.includes('Conectado')) {
+                 setUIState(true);
+            }
+        }, (error) => {
+            alert("Error de conexión con la base de datos: " + error.message);
+            setUIState(false);
+        });
+    }
+
+    function sendImageToChannel() {
+        if (!currentChannelRef || !currentImage) return;
+
+        alert("Enviando imagen al ordenador...");
+        sendBtn.disabled = true;
+
+        canvas.toBlob(blob => {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const imageData = event.target.result;
+                currentChannelRef.set({
+                    imageData: imageData,
+                    fileName: fileName.textContent,
+                    timestamp: Date.now()
+                }).then(() => {
+                    alert("¡Imagen enviada con éxito!");
+                    sendBtn.disabled = false;
+                }).catch(error => {
+                    alert("Error al enviar la imagen: " + error.message);
+                    sendBtn.disabled = false;
+                });
+            };
+            reader.readAsDataURL(blob);
+        }, 'image/jpeg', 0.9);
     }
 
     function processAndDisplayImage() {
-        if (!currentImage) { updateInterface(); return; }
+        if (!currentImage) {
+            setUIState(!!currentChannelRef);
+            return;
+        }
         const img = new Image();
         img.onload = () => {
-            canvas.width = img.width; canvas.height = img.height;
+            canvas.width = img.width;
+            canvas.height = img.height;
             ctx.drawImage(img, 0, 0);
-            const text = textInput.value || '';
+            
+            const text = textInput.value;
             if (text.trim()) {
-                const fontSize = parseInt(fontSizeInput.value);
-                const position = positionSelect.value;
+                const fontSize = Math.max(48, canvas.width / 25); // Tamaño de fuente dinámico
                 ctx.font = `bold ${fontSize}px Arial`;
-                ctx.fillStyle = selectedColor;
-                ctx.strokeStyle = selectedColor === 'white' ? 'black' : 'white';
-                ctx.lineWidth = Math.max(2, fontSize / 12);
-                const padding = Math.max(20, fontSize / 2);
-                const textMetrics = ctx.measureText(text);
-                let x, y;
-                switch (position) {
-                    case 'top-left': x = padding; y = fontSize + padding; break;
-                    case 'top-right': x = canvas.width - textMetrics.width - padding; y = fontSize + padding; break;
-                    case 'bottom-left': x = padding; y = canvas.height - padding; break;
-                    default: x = canvas.width - textMetrics.width - padding; y = canvas.height - padding; break;
-                }
-                ctx.strokeText(text, x, y);
-                ctx.fillText(text, x, y);
+                ctx.fillStyle = 'white';
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = Math.max(2, fontSize / 20);
+                const padding = fontSize;
+                ctx.strokeText(text, padding, canvas.height - padding);
+                ctx.fillText(text, padding, canvas.height - padding);
             }
-            if(!isCropping) {
-                previewImage.src = canvas.toDataURL('image/png');
-            }
-            updateInterface();
+            
+            previewImage.style.display = 'block';
+            previewImage.src = canvas.toDataURL('image/png');
+            setUIState(!!currentChannelRef);
         };
         img.src = currentImage;
     }
 
-    // --- LÓGICA P2P (WebRTC) ---
-    function resetP2PState() {
-        if (peer) { peer.destroy(); peer = null; }
-        if (scanner) stopScanner();
-        updateInterface();
-    }
-
-    function startScanner(onCodeFound) {
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-            .then(stream => {
-                scannerVideo.srcObject = stream;
-                scannerVideo.play();
-                updateInterface();
-                const tick = () => {
-                    if (scannerVideo.readyState === scannerVideo.HAVE_ENOUGH_DATA) {
-                        const tempCanvas = document.createElement('canvas');
-                        tempCanvas.height = scannerVideo.videoHeight;
-                        tempCanvas.width = scannerVideo.videoWidth;
-                        const tempCtx = tempCanvas.getContext('2d');
-                        tempCtx.drawImage(scannerVideo, 0, 0, tempCanvas.width, tempCanvas.height);
-                        const code = jsQR(tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height).data, tempCanvas.width, tempCanvas.height);
-                        if (code) { onCodeFound(code.data); }
-                    }
-                    if (scanner) scanner = requestAnimationFrame(tick);
-                };
-                scanner = requestAnimationFrame(tick);
-            }).catch((err) => {
-                if (err.name === 'NotAllowedError') {
-                    showAlert('Acceso a la cámara denegado. Revisa los permisos del navegador (clic en el candado 🔒 junto a la URL) o asegúrate de usar la página en un sitio con HTTPS.');
-                } else {
-                    showAlert(`No se pudo acceder a la cámara. Inténtalo de nuevo. Error: ${err.name}`);
-                }
-                resetP2PState();
-            });
-    }
-
-    function stopScanner() {
-        if (scanner) cancelAnimationFrame(scanner);
-        if (scannerVideo.srcObject) scannerVideo.srcObject.getTracks().forEach(track => track.stop());
-        scanner = null;
-    }
-
-    receiveBtn.addEventListener('click', () => {
-        peer = new SimplePeer({ initiator: true, trickle: false, config: peerConfig });
-        peer.on('signal', offer => {
-            qrModalTitle.textContent = "PASO 1: Escanea este QR con tu móvil";
-            qrCodeContainer.innerHTML = '';
-            new QRCode(qrCodeContainer, JSON.stringify(offer));
-            qrModal.classList.add('show');
-            startScanner(answer => {
-                try {
-                    peer.signal(JSON.parse(answer));
-                    stopScanner();
-                    qrModalTitle.textContent = "Conectando...";
-                    qrCodeContainer.innerHTML = '';
-                } catch (err) { showAlert('QR no válido. Inténtalo de nuevo.'); }
-            });
-        });
-        peer.on('connect', () => { qrModal.classList.remove('show'); showAlert('¡Conectado! Esperando la imagen...'); });
-        peer.on('data', data => {
-            const blob = new Blob([data], { type: 'image/jpeg' });
-            currentImage = URL.createObjectURL(blob);
-            originalImageOnLoad = currentImage;
-            fileName.textContent = `recibido_${new Date().toISOString()}.jpg`;
-            processAndDisplayImage();
-            showAlert('¡Imagen recibida!');
-            if ('vibrate' in navigator) navigator.vibrate(200);
-            peer.send('ok'); // Envía confirmación
-            resetP2PState();
-        });
-        peer.on('error', (err) => { showAlert(`Error de conexión.`); resetP2PState(); });
-        peer.on('close', resetP2PState);
-    });
-
-    sendBtn.addEventListener('click', () => {
-        showAlert("Preparando cámara para escanear...");
-        setTimeout(() => {
-            startScanner(offer => {
-                stopScanner();
-                peer = new SimplePeer({ initiator: false, trickle: false, config: peerConfig });
-                try { peer.signal(JSON.parse(offer)); } catch (err) { showAlert('QR no válido.'); resetP2PState(); return; }
-                
-                peer.on('signal', answer => {
-                    qrModalTitle.textContent = "PASO 2: Escanea este QR con el ordenador";
-                    qrCodeContainer.innerHTML = '';
-                    new QRCode(qrCodeContainer, JSON.stringify(answer));
-                    qrModal.classList.add('show');
-                });
-                
-                peer.on('connect', () => {
-                    qrModal.classList.remove('show');
-                    showAlert('Conectado. Enviando imagen...');
-                    canvas.toBlob(blob => { peer.send(blob); }, 'image/jpeg', 0.95);
-                });
-
-                peer.on('data', () => { showAlert('¡Imagen enviada y confirmada!'); resetP2PState(); });
-                peer.on('error', (err) => { showAlert(`Error de conexión.`); resetP2PState(); });
-                peer.on('close', resetP2PState);
-            });
-        }, 500); // 500 ms de retraso
-    });
-
-    cancelP2PBtn.addEventListener('click', () => { qrModal.classList.remove('show'); resetP2PState(); });
-
-    // --- LÓGICA DE LA APP (CARGA, EDICIÓN, RECORTE) ---
+    connectBtn.addEventListener('click', connectToChannel);
+    sendBtn.addEventListener('click', sendImageToChannel);
+    
     fileInput.addEventListener('change', e => {
         const file = e.target.files[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = e => {
-                originalImageOnLoad = e.target.result;
-                currentImage = originalImageOnLoad;
-                fileName.textContent = file.name;
+                currentImage = e.target.result;
+                fileName.textContent = file.name || `captura_${Date.now()}.jpg`;
                 processAndDisplayImage();
             };
             reader.readAsDataURL(file);
         }
     });
-    
+
+    textInput.addEventListener('input', processAndDisplayImage);
+
     downloadBtn.addEventListener('click', () => {
         const link = document.createElement('a');
-        link.download = 'imagen_editada_HQ.png';
+        link.download = (fileName.textContent || 'imagen_editada').replace(/\.[^/.]+$/, "") + ".png";
         link.href = canvas.toDataURL('image/png');
         link.click();
     });
 
-    [textInput, fontSizeInput, positionSelect].forEach(el => el.addEventListener('input', processAndDisplayImage));
-    colorOptions.forEach(option => {
-        option.addEventListener('click', function() {
-            document.querySelector('.color-option.selected').classList.remove('selected');
-            this.classList.add('selected');
-            selectedColor = this.dataset.color;
-            processAndDisplayImage();
-        });
-    });
-    alertOk.addEventListener('click', hideAlert);
-
-    // --- Lógica de Recorte ---
-    cropBtn.addEventListener('click', function() {
-        isCropping = !isCropping;
-        if (isCropping) {
-            currentImage = originalImageOnLoad;
-            cropBtn.textContent = '❌ Cancelar Recorte';
-            showAlert('Arrastra para seleccionar el área y suelta para aplicar.');
-        } else {
-            cropBtn.textContent = '✂️ Recortar Imagen';
-            showAlert('Recorte cancelado.');
-        }
-        processAndDisplayImage();
-        updateInterface();
-    });
-
-    function handleCropSelectionStart(e, isTouch = false) {
-        if (!isCropping) return;
-        if (isTouch) e.preventDefault();
-        selectingArea = true;
-        const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-        const clientX = isTouch ? e.touches[0].clientX : e.clientX;
-        const clientY = isTouch ? e.touches[0].clientY : e.clientY;
-        cropStartX = (clientX - rect.left) * scaleX;
-        cropStartY = (clientY - rect.top) * scaleY;
-    }
-
-    function handleCropSelectionMove(e, isTouch = false) {
-        if (!isCropping || !selectingArea) return;
-        if (isTouch) e.preventDefault();
-        const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-        cropEndX = ((isTouch ? e.touches[0].clientX : e.clientX) - rect.left) * scaleX;
-        cropEndY = ((isTouch ? e.touches[0].clientY : e.clientY) - rect.top) * scaleY;
-        
-        const originalImg = new Image();
-        originalImg.onload = function() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(originalImg, 0, 0);
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            const x = Math.min(cropStartX, cropEndX);
-            const y = Math.min(cropStartY, cropEndY);
-            const w = Math.abs(cropEndX - cropStartX);
-            const h = Math.abs(cropEndY - cropStartY);
-            ctx.drawImage(originalImg, x, y, w, h, x, y, w, h);
-        };
-        originalImg.src = originalImageOnLoad;
-    }
-
-    function handleCropSelectionEnd() {
-        if (!isCropping || !selectingArea) return;
-        selectingArea = false;
-        const x = Math.min(cropStartX, cropEndX);
-        const y = Math.min(cropStartY, cropEndY);
-        const width = Math.abs(cropEndX - cropStartX);
-        const height = Math.abs(cropEndY - cropStartY);
-        if (width < 10 || height < 10) {
-            isCropping = false; cropBtn.textContent = '✂️ Recortar Imagen'; updateInterface(); processAndDisplayImage(); return;
-        }
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = width; tempCanvas.height = height;
-        const tempCtx = tempCanvas.getContext('2d');
-        const originalImg = new Image();
-        originalImg.onload = function() {
-            tempCtx.drawImage(originalImg, x, y, width, height, 0, 0, width, height);
-            currentImage = tempCanvas.toDataURL('image/jpeg', 0.95);
-            originalImageOnLoad = currentImage;
-            isCropping = false; cropBtn.textContent = '✂️ Recortar Imagen';
-            showAlert('Imagen recortada.');
-            processAndDisplayImage();
-            updateInterface();
-        };
-        originalImg.src = originalImageOnLoad;
-    }
-
-    canvas.addEventListener('mousedown', (e) => handleCropSelectionStart(e));
-    canvas.addEventListener('mousemove', (e) => handleCropSelectionMove(e));
-    canvas.addEventListener('mouseup', handleCropSelectionEnd);
-    canvas.addEventListener('mouseleave', () => { if(selectingArea) handleCropSelectionEnd(); });
-    canvas.addEventListener('touchstart', (e) => handleCropSelectionStart(e, true));
-    canvas.addEventListener('touchmove', (e) => handleCropSelectionMove(e, true));
-    canvas.addEventListener('touchend', handleCropSelectionEnd);
-
-    document.addEventListener('DOMContentLoaded', updateInterface);
+    setUIState(false);
     </script>
 </body>
 </html>
