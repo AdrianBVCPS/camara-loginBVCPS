@@ -13,21 +13,20 @@
             --dark-grey: #424242; --white: #FFFFFF; --accent-color: #1976D2; --danger-color: #E57373;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-tap-highlight-color: transparent; }
+        html, body { height: 100%; }
         body { background-color: var(--light-grey); color: var(--dark-grey); }
-        .app-container { display: flex; flex-direction: column; height: 100vh; }
+        .app-container { display: flex; flex-direction: column; height: 100%; }
         .header { background-color: var(--primary-color); color: var(--white); padding: 1rem; text-align: center; flex-shrink: 0; }
         
         /* Contenedor principal rediseñado */
         .main-content {
             flex-grow: 1;
             display: flex;
-            flex-direction: column;
+            flex-direction: column; /* Diseño por defecto para móvil */
             overflow: hidden;
         }
 
-        /* Previsualización pequeña en la parte superior */
         .preview-pane {
-            flex-basis: 40vh; /* Ocupa el 40% de la altura de la vista */
             flex-shrink: 0;
             background-color: #e0e0e0;
             display: flex;
@@ -36,22 +35,35 @@
             position: relative;
             border-bottom: 2px solid #ccc;
         }
-        .preview-pane img, .preview-pane canvas {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
+        .preview-pane img, .preview-pane canvas { max-width: 100%; max-height: 100%; object-fit: contain; }
         .placeholder { padding: 1rem; text-align: center; color: var(--secondary-color); }
         #canvas { display: none; }
         .cropping-mode #canvas { cursor: crosshair; border: 2px solid var(--accent-color); }
 
-        /* Panel de controles con scroll */
         .controls-pane {
-            flex-grow: 1;
             padding: 1rem;
             overflow-y: auto;
             background-color: var(--white);
+            flex-grow: 1;
         }
+
+        /* --- SOLUCIÓN: DISEÑO RESPONSIVE PARA ORDENADOR --- */
+        @media (min-width: 768px) {
+            .main-content {
+                flex-direction: row; /* Columnas en pantallas grandes */
+            }
+            .preview-pane {
+                flex-basis: 60%; /* La previsualización ocupa el 60% del ancho */
+                height: 100%;
+                border-right: 2px solid #ccc;
+                border-bottom: none;
+            }
+            .controls-pane {
+                flex-basis: 40%; /* Los controles ocupan el 40% */
+                height: 100%;
+            }
+        }
+        /* ------------------------------------------------ */
 
         .form-group { margin-bottom: 1.25rem; }
         .channel-group { border: 2px solid var(--accent-color); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
@@ -181,6 +193,7 @@
     
     let originalImageOnLoad = null, currentImage = null, currentChannelRef = null, selectedColor = 'white';
     let isCropping = false, selectingArea = false, cropStartX = 0, cropStartY = 0, cropEndX = 0, cropEndY = 0;
+    let lastReceivedTimestamp = 0;
 
     function showAlert(message) { alertMessage.textContent = message; alertBackdrop.classList.add('show'); mobileAlert.classList.add('show'); }
     function hideAlert() { alertBackdrop.classList.remove('show'); mobileAlert.classList.remove('show'); }
@@ -190,18 +203,15 @@
         const hasImage = !!currentImage;
         const isEditing = isCropping;
 
-        // Grupo de conexión
         channelIdInput.disabled = isConnected;
         connectBtn.textContent = isConnected ? 'Desconectar' : 'Conectar a Sala';
         statusDiv.textContent = isConnected ? `Conectado a sala: ${channelIdInput.value}` : 'Desconectado';
         statusDiv.style.color = isConnected ? 'green' : 'red';
         
-        // Visibilidad de secciones
         captureSection.style.display = isConnected && !hasImage ? 'block' : 'none';
         actionControls.style.display = hasImage ? 'block' : 'none';
         placeholderText.style.display = hasImage ? 'none' : 'block';
 
-        // Estado de botones de acción
         sendBtn.disabled = !isConnected || !hasImage || isEditing;
         downloadBtn.disabled = !hasImage || isEditing;
         cropBtn.disabled = !hasImage || isEditing;
@@ -213,7 +223,7 @@
     function connectToChannel() {
         const channelId = channelIdInput.value;
         if (currentChannelRef) {
-            currentChannelRef.off(); currentChannelRef = null; setUIState(); return;
+            currentChannelRef.off(); currentChannelRef = null; discardImage(); setUIState(); return;
         }
         if (!channelId || channelId.length !== 4) { showAlert("Por favor, introduce un código de sala de 4 dígitos."); return; }
         
@@ -221,14 +231,13 @@
         currentChannelRef = database.ref('channels/' + channelId);
         currentChannelRef.on('value', (snapshot) => {
             const data = snapshot.val();
-            if (data && data.imageData) {
-                // Solo actualiza si es una imagen nueva para evitar bucles
-                if (btoa(currentImage) !== btoa(data.imageData)) {
-                    currentImage = data.imageData;
-                    originalImageOnLoad = currentImage;
-                    processAndDisplayImage();
-                    showAlert("¡Nueva imagen recibida!");
-                }
+            if (data && data.timestamp > lastReceivedTimestamp) {
+                lastReceivedTimestamp = data.timestamp;
+                currentImage = data.imageData;
+                originalImageOnLoad = currentImage;
+                textInput.value = data.textData || '';
+                processAndDisplayImage();
+                showAlert("¡Nueva imagen recibida!");
             }
             if(!statusDiv.textContent.includes('Conectado')) setUIState();
         }, (error) => { showAlert("Error de conexión: " + error.message); currentChannelRef = null; setUIState(); });
@@ -243,6 +252,7 @@
             reader.onload = (event) => {
                 currentChannelRef.set({
                     imageData: event.target.result,
+                    textData: textInput.value,
                     timestamp: Date.now()
                 }).then(() => { showAlert("¡Imagen enviada con éxito!"); })
                   .catch(error => { showAlert("Error al enviar: " + error.message); })
@@ -288,15 +298,9 @@
     }
 
     function discardImage() {
-        originalImageOnLoad = null;
-        currentImage = null;
-        textInput.value = '';
-        previewImage.style.display = 'none';
-        canvas.style.display = 'none';
-        if (isCropping) {
-            isCropping = false;
-            cropBtn.textContent = '✂️ Recortar Imagen';
-        }
+        originalImageOnLoad = null; currentImage = null; textInput.value = '';
+        previewImage.style.display = 'none'; canvas.style.display = 'none';
+        if (isCropping) { isCropping = false; cropBtn.textContent = '✂️ Recortar Imagen'; }
         setUIState();
     }
 
@@ -315,14 +319,12 @@
 
     cropBtn.addEventListener('click', () => {
         isCropping = !isCropping;
-        cropBtn.textContent = isCropping ? '✅ Aplicar / ❌ Cancelar' : '✂️ Recortar Imagen';
+        cropBtn.textContent = isCropping ? '✅ Aplicar Recorte' : '✂️ Recortar Imagen';
         if(isCropping) {
             currentImage = originalImageOnLoad;
-            showAlert('Arrastra sobre la imagen para seleccionar. Vuelve a pulsar el botón para aplicar o cancelar.');
-        } else if (selectingArea) {
-            handleCropSelectionEnd(); // Si se estaba seleccionando, aplica el recorte
+            showAlert('Arrastra sobre la imagen para seleccionar. Pulsa "Aplicar Recorte" para finalizar.');
         } else {
-            showAlert('Modo recorte desactivado.');
+            handleCropSelectionEnd();
         }
         processAndDisplayImage();
         setUIState();
@@ -331,7 +333,7 @@
     function handleCropSelectionStart(e, isTouch = false) { if (!isCropping) return; if (isTouch) e.preventDefault(); selectingArea = true; const rect = canvas.getBoundingClientRect(); const scaleX = canvas.width / rect.width; const scaleY = canvas.height / rect.height; const clientX = isTouch ? e.touches[0].clientX : e.clientX; const clientY = isTouch ? e.touches[0].clientY : e.clientY; cropStartX = (clientX - rect.left) * scaleX; cropStartY = (clientY - rect.top) * scaleY; cropEndX = cropStartX; cropEndY = cropStartY; }
     function handleCropSelectionMove(e, isTouch = false) { if (!isCropping || !selectingArea) return; if (isTouch) e.preventDefault(); const rect = canvas.getBoundingClientRect(); const scaleX = canvas.width / rect.width; const scaleY = canvas.height / rect.height; cropEndX = ((isTouch ? e.touches[0].clientX : e.clientX) - rect.left) * scaleX; cropEndY = ((isTouch ? e.touches[0].clientY : e.clientY) - rect.top) * scaleY; const img = new Image(); img.onload = () => { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0); ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'; ctx.fillRect(0, 0, canvas.width, canvas.height); const x = Math.min(cropStartX, cropEndX); const y = Math.min(cropStartY, cropEndY); const w = Math.abs(cropEndX - cropStartX); const h = Math.abs(cropEndY - cropStartY); ctx.drawImage(img, x, y, w, h, x, y, w, h); }; img.src = originalImageOnLoad; }
     function handleCropSelectionEnd() {
-        if (!isCropping || !selectingArea) return;
+        if (!selectingArea) { showAlert('Recorte cancelado.'); return; }
         const x = Math.min(cropStartX, cropEndX); const y = Math.min(cropStartY, cropEndY);
         const width = Math.abs(cropEndX - cropStartX); const height = Math.abs(cropEndY - cropStartY);
         
@@ -349,7 +351,7 @@
     colorOptions.forEach(option => { option.addEventListener('click', function() { document.querySelector('.color-option.selected').classList.remove('selected'); this.classList.add('selected'); selectedColor = this.dataset.color; processAndDisplayImage(); }); });
     downloadBtn.addEventListener('click', () => {
         const link = document.createElement('a');
-        const filename = textInput.value.trim() || `imagen_${Date.now()}`;
+        const filename = textInput.value.trim().replace(/[^a-z0-9]/gi, '_').toLowerCase() || `imagen_${Date.now()}`;
         link.download = filename + ".png";
         link.href = canvas.toDataURL('image/png');
         link.click();
