@@ -1,0 +1,16 @@
+{
+  "name": "Cámara Login",
+  "short_name": "Cámara",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#D32F2F",
+  "theme_color": "#D32F2F",
+  "description": "Aplicación para capturar, editar y enviar imágenes.",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
