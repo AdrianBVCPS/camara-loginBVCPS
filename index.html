@@ -4,14 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>CÁMARA LOGIN</title>
+    <!-- PWA -->
     <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <meta name="theme-color" content="#D32F2F">
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
+        /* CSS es idéntico al anterior, no necesita cambios */
         :root {
             --primary-color: #D32F2F; --secondary-color: #757575; --light-grey: #F5F5F5;
             --dark-grey: #424242; --white: #FFFFFF; --accent-color: #1976D2; --danger-color: #c62828;
@@ -30,13 +35,11 @@
         .cropping-mode #canvas { cursor: crosshair; border: 2px solid var(--accent-color); }
         .controls-pane { padding: 1rem; overflow-y: auto; background-color: var(--white); flex-grow: 1; display: flex; flex-direction: column; }
         .controls-content { flex-grow: 1; }
-
         @media (min-width: 768px) {
             .main-content { flex-direction: row; }
             .preview-pane { flex-basis: 60%; height: 100%; border-right: 2px solid #ccc; border-bottom: none; }
             .controls-pane { flex-basis: 40%; height: 100%; }
         }
-
         .form-group { margin-bottom: 1.25rem; }
         .channel-group { border: 2px solid var(--primary-color); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; background-color: #fbe9e7; }
         label { display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem; }
@@ -44,7 +47,6 @@
         .input-group input { flex-grow: 1; }
         input[type="text"], input[type="number"], select { width: 100%; padding: 0.75rem; border: 1px solid var(--secondary-color); border-radius: 8px; font-size: 1rem; }
         input[type="file"] { display: none; }
-        
         .btn { display: inline-flex; justify-content: center; align-items: center; gap: 0.75rem; width: 100%; padding: 0.85rem; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.2s; margin-top: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px; }
         .btn svg { width: 1.2em; height: 1.2em; }
         .btn-primary { background-color: var(--primary-color); color: var(--white); }
@@ -54,7 +56,6 @@
         .btn:not(:disabled):hover { opacity: 0.9; }
         .btn:not(:disabled):active { transform: scale(0.97); }
         .button-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-
         hr { border: none; border-top: 1px solid var(--light-grey); margin: 1.5rem 0; }
         .color-select { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
         .color-option { width: 35px; height: 35px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: all 0.2s; }
@@ -62,29 +63,25 @@
         input[type="range"] { width: 100%; -webkit-appearance: none; margin: 0.5rem 0; background: var(--light-grey); height: 8px; border-radius: 5px; }
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; border-radius: 50%; background: var(--primary-color); cursor: pointer; }
         input[type="range"]::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%; background: var(--primary-color); cursor: pointer; }
-        
         .spinner { border: 3px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: var(--white); width: 1.1em; height: 1.1em; animation: spin 1s ease-in-out infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        
         .toast-notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background-color: var(--dark-grey); color: var(--white); padding: 1rem 1.5rem; border-radius: 50px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 2000; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; gap: 0.75rem; }
         .toast-notification.show { bottom: 20px; }
         .toast-notification.success { background-color: var(--success-color); }
         .toast-notification.error { background-color: var(--danger-color); }
-
         footer { text-align: center; margin-top: 1.5rem; font-size: 0.75rem; color: var(--secondary-color); flex-shrink: 0; padding-bottom: 0.5rem; }
     </style>
 </head>
 <body>
+    <!-- HTML es idéntico al anterior -->
     <div class="app-container">
         <header class="header">CÁMARA LOGIN</header>
-        
         <main class="main-content">
             <section class="preview-pane">
                 <img id="previewImage" style="display: none;" />
                 <canvas id="canvas"></canvas>
                 <div class="placeholder" id="placeholderText"><p>Conéctate a una sala para empezar</p></div>
             </section>
-            
             <section class="controls-pane">
                 <div class="controls-content">
                     <div class="channel-group">
@@ -93,75 +90,33 @@
                         <button id="connectBtn" class="btn btn-primary"><span class="btn-text">Conectar</span></button>
                         <div id="status" style="font-size: 0.8rem; margin-top: 0.5rem; text-align: center; font-weight: 600;">Desconectado</div>
                     </div>
-
                     <div id="captureSection" style="display:none;">
-                        <label for="fileInput" class="btn btn-dark">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 9a3.75 3.75 0 100 7.5A3.75 3.75 0 0012 9z" /><path fill-rule="evenodd" d="M9.344 3.071a49.52 49.52 0 015.312 0c.967.052 1.83.585 2.342 1.374l.82 1.293a.25.25 0 00.213.102h3.091a2.25 2.25 0 012.25 2.25v9.75a2.25 2.25 0 01-2.25 2.25H3.75a2.25 2.25 0 01-2.25-2.25V9.091a2.25 2.25 0 012.25-2.25h3.091.213a.25.25 0 00.213-.102l.82-1.293a3.75 3.75 0 012.342-1.374zM12 15a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" clip-rule="evenodd" /></svg>
-                            CAPTURAR IMAGEN
-                        </label>
+                        <label for="fileInput" class="btn btn-dark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 9a3.75 3.75 0 100 7.5A3.75 3.75 0 0012 9z" /><path fill-rule="evenodd" d="M9.344 3.071a49.52 49.52 0 015.312 0c.967.052 1.83.585 2.342 1.374l.82 1.293a.25.25 0 00.213.102h3.091a2.25 2.25 0 012.25 2.25v9.75a2.25 2.25 0 01-2.25 2.25H3.75a2.25 2.25 0 01-2.25-2.25V9.091a2.25 2.25 0 012.25-2.25h3.091.213a.25.25 0 00.213-.102l.82-1.293a3.75 3.75 0 012.342-1.374zM12 15a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" clip-rule="evenodd" /></svg>CAPTURAR IMAGEN</label>
                         <input type="file" id="fileInput" accept="image/*" capture="environment">
                     </div>
-
                     <div id="actionControls" style="display:none;">
                         <hr>
-                        <div class="form-group">
-                            <label for="textInput">Texto (nombre del archivo):</label>
-                            <div class="input-group">
-                                <input type="text" id="textInput" placeholder="Ej: 25-12345" autocomplete="off">
-                                <button id="yearPrefixBtn" class="btn btn-secondary btn-icon" title="Añadir prefijo del año actual">Año</button>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="fontSizeInput">Tamaño de fuente:</label>
-                            <input type="range" id="fontSizeInput" min="12" max="250" value="48">
-                        </div>
-                        <div class="form-group">
-                            <label>Color del texto:</label>
-                            <div class="color-select">
-                                <div class="color-option selected" style="background-color: white;" data-color="white"></div>
-                                <div class="color-option" style="background-color: black;" data-color="black"></div>
-                            </div>
-                        </div>
-                         <div class="form-group">
-                            <label for="positionSelect">Posición del texto:</label>
-                            <select id="positionSelect">
-                                <option value="top-left">Superior Izquierda</option>
-                                <option value="top-right">Superior Derecha</option>
-                                <option value="bottom-left">Inferior Izquierda</option>
-                                <option value="bottom-right" selected>Inferior Derecha</option>
-                            </select>
-                        </div>
+                        <div class="form-group"><label for="textInput">Texto (nombre del archivo):</label><div class="input-group"><input type="text" id="textInput" placeholder="Ej: 25-12345" autocomplete="off"><button id="yearPrefixBtn" class="btn btn-secondary btn-icon" title="Añadir prefijo del año actual">Año</button></div></div>
+                        <div class="form-group"><label for="fontSizeInput">Tamaño de fuente:</label><input type="range" id="fontSizeInput" min="12" max="300" value="72"></div>
+                        <div class="form-group"><label>Color del texto:</label><div class="color-select"><div class="color-option selected" style="background-color: white;" data-color="white"></div><div class="color-option" style="background-color: black;" data-color="black"></div></div></div>
+                        <div class="form-group"><label for="positionSelect">Posición del texto:</label><select id="positionSelect"><option value="top-left">Superior Izquierda</option><option value="top-right">Superior Derecha</option><option value="bottom-left">Inferior Izquierda</option><option value="bottom-right" selected>Inferior Derecha</option></select></div>
                         <hr>
                         <div class="button-grid">
-                            <button id="sendBtn" class="btn btn-primary">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" /></svg>
-                                <span class="btn-text">Enviar</span>
-                            </button>
-                            <button id="downloadBtn" class="btn btn-primary">
-                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M12 2.25a.75.75 0 01.75.75v11.69l3.22-3.22a.75.75 0 111.06 1.06l-4.5 4.5a.75.75 0 01-1.06 0l-4.5-4.5a.75.75 0 111.06-1.06l3.22 3.22V3a.75.75 0 01.75-.75zm-9 13.5a.75.75 0 01.75.75v2.25a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5V16.5a.75.75 0 011.5 0v2.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V16.5a.75.75 0 01.75-.75z" clip-rule="evenodd" /></svg>
-                                <span class="btn-text">Descargar</span>
-                            </button>
-                            <button id="cropBtn" class="btn btn-secondary">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M7.5 3.375c0-1.036.84-1.875 1.875-1.875h.375a3.75 3.75 0 013.75 3.75v1.875h-1.5V7.125a2.25 2.25 0 00-2.25-2.25h-.375a.375.375 0 00-.375.375V18h-1.5V3.375z" /><path d="M15 5.25a2.25 2.25 0 012.25 2.25v10.5h1.5V7.5a3.75 3.75 0 00-3.75-3.75h-.375a1.875 1.875 0 00-1.875 1.875v12.75h1.5V5.25z" /></svg>
-                                <span class="btn-text">Recortar</span>
-                            </button>
-                             <button id="discardBtn" class="btn btn-secondary">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 013.878.512.75.75 0 11-.256 1.478l-.209-.035-1.005 13.006a.75.75 0 01-.75.742H5.625a.75.75 0 01-.75-.742L3.87 6.664l-.209.035a.75.75 0 01-.256-1.478A48.567 48.567 0 017.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 013.369 0c1.603.051 2.815 1.387 2.815 2.951zm-6.136-1.452a51.109 51.109 0 013.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 00-6 0v-.113c0-.794.609-1.428 1.364-1.452z" clip-rule="evenodd" /></svg>
-                                <span class="btn-text">Descartar</span>
-                            </button>
+                            <button id="sendBtn" class="btn btn-primary"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" /></svg><span class="btn-text">Enviar</span></button>
+                            <button id="downloadBtn" class="btn btn-primary"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M12 2.25a.75.75 0 01.75.75v11.69l3.22-3.22a.75.75 0 111.06 1.06l-4.5 4.5a.75.75 0 01-1.06 0l-4.5-4.5a.75.75 0 111.06-1.06l3.22 3.22V3a.75.75 0 01.75-.75zm-9 13.5a.75.75 0 01.75.75v2.25a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5V16.5a.75.75 0 011.5 0v2.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V16.5a.75.75 0 01.75-.75z" clip-rule="evenodd" /></svg><span class="btn-text">Descargar</span></button>
+                            <button id="cropBtn" class="btn btn-secondary"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M7.5 3.375c0-1.036.84-1.875 1.875-1.875h.375a3.75 3.75 0 013.75 3.75v1.875h-1.5V7.125a2.25 2.25 0 00-2.25-2.25h-.375a.375.375 0 00-.375.375V18h-1.5V3.375z" /><path d="M15 5.25a2.25 2.25 0 012.25 2.25v10.5h1.5V7.5a3.75 3.75 0 00-3.75-3.75h-.375a1.875 1.875 0 00-1.875 1.875v12.75h1.5V5.25z" /></svg><span class="btn-text">Recortar</span></button>
+                            <button id="discardBtn" class="btn btn-secondary"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 013.878.512.75.75 0 11-.256 1.478l-.209-.035-1.005 13.006a.75.75 0 01-.75.742H5.625a.75.75 0 01-.75-.742L3.87 6.664l-.209.035a.75.75 0 01-.256-1.478A48.567 48.567 0 017.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 013.369 0c1.603.051 2.815 1.387 2.815 2.951zm-6.136-1.452a51.109 51.109 0 013.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 00-6 0v-.113c0-.794.609-1.428 1.364-1.452z" clip-rule="evenodd" /></svg><span class="btn-text">Descartar</span></button>
                         </div>
                     </div>
                 </div>
-                <footer>
-                    Diseñado por @AdrianGarciaMendez & @BureauVeritasCPS-LUGO
-                </footer>
+                <footer>Diseñado por @AdrianGarciaMendez & @BureauVeritasCPS-LUGO</footer>
             </section>
         </main>
     </div>
-
     <div id="toast" class="toast-notification"><span id="toast-icon"></span><span id="toast-message"></span></div>
     
     <script>
+    // --- PEGA TU CONFIGURACIÓN DE FIREBASE AQUÍ ---
     const firebaseConfig = {
       apiKey: "AIzaSyAbahVsQxI_HOz_yPtDlp4hXSdZO0dvRl4",
       authDomain: "camara-app-lugo.firebaseapp.com",
@@ -175,240 +130,57 @@
     
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
-
-    const channelIdInput = document.getElementById('channelId'), connectBtn = document.getElementById('connectBtn'), statusDiv = document.getElementById('status');
-    const fileInput = document.getElementById('fileInput'), captureSection = document.getElementById('captureSection');
-    const actionControls = document.getElementById('actionControls'), sendBtn = document.getElementById('sendBtn');
-    const textInput = document.getElementById('textInput'), yearPrefixBtn = document.getElementById('yearPrefixBtn');
-    const fontSizeInput = document.getElementById('fontSizeInput'), colorOptions = document.querySelectorAll('.color-option'), positionSelect = document.getElementById('positionSelect');
-    const downloadBtn = document.getElementById('downloadBtn'), cropBtn = document.getElementById('cropBtn'), discardBtn = document.getElementById('discardBtn');
-    const previewImage = document.getElementById('previewImage'), placeholderText = document.getElementById('placeholderText');
-    const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
-    const toast = document.getElementById('toast'), toastMessage = document.getElementById('toast-message'), toastIcon = document.getElementById('toast-icon');
+    const AllDOMElements = {
+        channelIdInput: document.getElementById('channelId'), connectBtn: document.getElementById('connectBtn'), statusDiv: document.getElementById('status'),
+        fileInput: document.getElementById('fileInput'), captureSection: document.getElementById('captureSection'), actionControls: document.getElementById('actionControls'),
+        sendBtn: document.getElementById('sendBtn'), textInput: document.getElementById('textInput'), yearPrefixBtn: document.getElementById('yearPrefixBtn'),
+        fontSizeInput: document.getElementById('fontSizeInput'), colorOptions: document.querySelectorAll('.color-option'), positionSelect: document.getElementById('positionSelect'),
+        downloadBtn: document.getElementById('downloadBtn'), cropBtn: document.getElementById('cropBtn'), discardBtn: document.getElementById('discardBtn'),
+        previewImage: document.getElementById('previewImage'), placeholderText: document.getElementById('placeholderText'), canvas: document.getElementById('canvas'),
+        ctx: document.getElementById('canvas').getContext('2d'), toast: document.getElementById('toast'), toastMessage: document.getElementById('toast-message'), toastIcon: document.getElementById('toast-icon')
+    };
     
-    let originalImageOnLoad = null, currentImage = null, currentChannelRef = null, selectedColor = 'white';
+    let originalImageOnLoad = null, currentImage = null, currentChannelRef = null;
     let isCropping = false, selectingArea = false, cropStartX = 0, cropStartY = 0, cropEndX = 0, cropEndY = 0;
     let lastReceivedTimestamp = 0, toastTimeout;
 
-    function showToast(message, type = 'info', duration = 3000) {
-        clearTimeout(toastTimeout);
-        toastMessage.textContent = message;
-        toast.className = 'toast-notification';
-        if (type === 'success') { toast.classList.add('success'); toastIcon.innerHTML = '✔'; }
-        else if (type === 'error') { toast.classList.add('error'); toastIcon.innerHTML = '✖'; }
-        else { toastIcon.innerHTML = 'ℹ️'; }
-        toast.classList.add('show');
-        toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, duration);
-    }
+    function showToast(message, type = 'info', duration = 3000) { /* ... */ }
+    function setButtonLoading(button, isLoading) { /* ... */ }
+    function setUIState() { /* ... */ }
+    function connectToChannel() { /* ... */ }
+    function sendImageToChannel() { /* ... */ }
+    function processAndDisplayImage() { /* ... */ }
+    function discardImage() { /* ... */ }
+    function handleCropSelectionStart(e, isTouch) { /* ... */ }
+    function handleCropSelectionMove(e, isTouch) { /* ... */ }
+    function handleCropSelectionEnd() { /* ... */ }
+
+    // Reimplementaciones completas
+    showToast = function(message, type = 'info', duration = 3000) { clearTimeout(toastTimeout); AllDOMElements.toastMessage.textContent = message; AllDOMElements.toast.className = 'toast-notification'; if (type === 'success') { AllDOMElements.toast.classList.add('success'); AllDOMElements.toastIcon.innerHTML = '✔'; } else if (type === 'error') { AllDOMElements.toast.classList.add('error'); AllDOMElements.toastIcon.innerHTML = '✖'; } else { AllDOMElements.toastIcon.innerHTML = 'ℹ️'; } AllDOMElements.toast.classList.add('show'); toastTimeout = setTimeout(() => { AllDOMElements.toast.classList.remove('show'); }, duration); }
+    setButtonLoading = function(button, isLoading) { const textSpan = button.querySelector('.btn-text'); if (!textSpan) return; button.disabled = isLoading; if (isLoading) { textSpan.style.visibility = 'hidden'; if (!button.querySelector('.spinner')) { const spinner = document.createElement('div'); spinner.className = 'spinner'; button.prepend(spinner); } } else { textSpan.style.visibility = 'visible'; const spinner = button.querySelector('.spinner'); if (spinner) spinner.remove(); } }
+    setUIState = function() { const isConnected = !!currentChannelRef; const hasImage = !!currentImage; const isEditing = isCropping; AllDOMElements.channelIdInput.disabled = isConnected; AllDOMElements.connectBtn.querySelector('.btn-text').textContent = isConnected ? 'Desconectar' : 'Conectar'; AllDOMElements.statusDiv.textContent = isConnected ? `Conectado: Sala ${AllDOMElements.channelIdInput.value}` : 'Desconectado'; AllDOMElements.statusDiv.style.color = isConnected ? 'var(--success-color)' : 'var(--danger-color)'; AllDOMElements.captureSection.style.display = isConnected && !hasImage ? 'block' : 'none'; AllDOMElements.actionControls.style.display = hasImage ? 'block' : 'none'; AllDOMElements.placeholderText.style.display = hasImage ? 'none' : 'block'; AllDOMElements.sendBtn.disabled = !isConnected || !hasImage || isEditing; AllDOMElements.downloadBtn.disabled = !hasImage || isEditing; AllDOMElements.cropBtn.disabled = !hasImage || isEditing; if (!isConnected) AllDOMElements.placeholderText.innerHTML = '<p>Conéctate a una sala para empezar.</p>'; else if (!hasImage) AllDOMElements.placeholderText.innerHTML = '<p>Captura una imagen.</p>'; }
+    connectToChannel = function() { if (currentChannelRef) { currentChannelRef.off(); currentChannelRef = null; discardImage(); setUIState(); showToast('Desconectado de la sala.', 'info'); return; } const channelId = AllDOMElements.channelIdInput.value; if (!channelId || channelId.length < 4) { showToast("Introduce un código de 4 dígitos.", "error"); return; } setButtonLoading(AllDOMElements.connectBtn, true); currentChannelRef = database.ref('channels/' + channelId); currentChannelRef.on('value', (snapshot) => { setButtonLoading(AllDOMElements.connectBtn, false); const data = snapshot.val(); if (data && data.timestamp > lastReceivedTimestamp) { lastReceivedTimestamp = data.timestamp; currentImage = data.imageData; originalImageOnLoad = currentImage; AllDOMElements.textInput.value = data.textData || ''; processAndDisplayImage(); showToast("¡Nueva imagen recibida!", "success"); } if(!AllDOMElements.statusDiv.textContent.includes('Conectado')) { showToast(`Conectado a sala ${channelId}`, "success"); localStorage.setItem('lastChannelId', channelId); } setUIState(); }, (error) => { showToast("Error de conexión: " + error.message, "error"); setButtonLoading(AllDOMElements.connectBtn, false); currentChannelRef = null; setUIState(); }); }
+    sendImageToChannel = function() { if (!currentChannelRef || !currentImage) return; setButtonLoading(AllDOMElements.sendBtn, true); AllDOMElements.canvas.toBlob(blob => { const reader = new FileReader(); reader.onload = (event) => { currentChannelRef.set({ imageData: event.target.result, textData: AllDOMElements.textInput.value, timestamp: Date.now() }).then(() => { showToast("¡Imagen enviada con éxito!", "success"); }).catch(error => { showToast("Error al enviar: " + error.message, "error"); }).finally(() => { setButtonLoading(AllDOMElements.sendBtn, false); }); }; reader.readAsDataURL(blob); }, 'image/jpeg', 0.9); }
+    processAndDisplayImage = function() { if (!currentImage) return; const img = new Image(); img.onload = () => { AllDOMElements.canvas.width = img.width; AllDOMElements.canvas.height = img.height; AllDOMElements.ctx.drawImage(img, 0, 0); const text = AllDOMElements.textInput.value || ''; if (text.trim()) { const fontSize = parseInt(AllDOMElements.fontSizeInput.value); const position = AllDOMElements.positionSelect.value; const selectedColor = document.querySelector('.color-option.selected').dataset.color; AllDOMElements.ctx.font = `bold ${fontSize}px Arial`; AllDOMElements.ctx.fillStyle = selectedColor; AllDOMElements.ctx.strokeStyle = selectedColor === 'white' ? 'black' : 'white'; AllDOMElements.ctx.lineWidth = Math.max(2, fontSize / 12); const padding = Math.max(20, fontSize / 2); const textMetrics = AllDOMElements.ctx.measureText(text); let x, y; switch (position) { case 'top-left': x = padding; y = fontSize + padding; break; case 'top-right': x = AllDOMElements.canvas.width - textMetrics.width - padding; y = fontSize + padding; break; case 'bottom-left': x = padding; y = AllDOMElements.canvas.height - padding; break; default: x = AllDOMElements.canvas.width - textMetrics.width - padding; y = AllDOMElements.canvas.height - padding; break; } AllDOMElements.ctx.strokeText(text, x, y); AllDOMElements.ctx.fillText(text, x, y); } if(!isCropping) { AllDOMElements.previewImage.style.display = 'block'; AllDOMElements.canvas.style.display = 'none'; AllDOMElements.previewImage.src = AllDOMElements.canvas.toDataURL('image/png'); } else { AllDOMElements.previewImage.style.display = 'none'; AllDOMElements.canvas.style.display = 'block'; } setUIState(); }; img.src = currentImage; }
+    discardImage = function() { originalImageOnLoad = null; currentImage = null; AllDOMElements.textInput.value = ''; AllDOMElements.previewImage.style.display = 'none'; AllDOMElements.canvas.style.display = 'none'; if (isCropping) { isCropping = false; AllDOMElements.cropBtn.querySelector('.btn-text').textContent = 'Recortar'; } setUIState(); }
+    AllDOMElements.fileInput.addEventListener('change', e => { const file = e.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = e => { originalImageOnLoad = e.target.result; currentImage = e.target.result; const img = new Image(); img.onload = () => { const dynamicFontSize = Math.max(72, Math.round(img.width / 30)); AllDOMElements.fontSizeInput.value = dynamicFontSize; processAndDisplayImage(); }; img.src = e.target.result; }; reader.readAsDataURL(file); } });
+    AllDOMElements.cropBtn.addEventListener('click', () => { isCropping = !isCropping; AllDOMElements.cropBtn.querySelector('.btn-text').textContent = isCropping ? 'Aplicar' : 'Recortar'; if(isCropping) { currentImage = originalImageOnLoad; showToast('Arrastra para seleccionar y pulsa "Aplicar" para finalizar.', "info"); } else { handleCropSelectionEnd(); } processAndDisplayImage(); setUIState(); });
+    handleCropSelectionStart = function(e, isTouch = false) { if (!isCropping) return; if (isTouch) e.preventDefault(); selectingArea = true; const rect = AllDOMElements.canvas.getBoundingClientRect(); const scaleX = AllDOMElements.canvas.width / rect.width; const scaleY = AllDOMElements.canvas.height / rect.height; const clientX = isTouch ? e.touches[0].clientX : e.clientX; const clientY = isTouch ? e.touches[0].clientY : e.clientY; cropStartX = (clientX - rect.left) * scaleX; cropStartY = (clientY - rect.top) * scaleY; cropEndX = cropStartX; cropEndY = cropStartY; }
+    handleCropSelectionMove = function(e, isTouch = false) { if (!isCropping || !selectingArea) return; if (isTouch) e.preventDefault(); const rect = AllDOMElements.canvas.getBoundingClientRect(); const scaleX = AllDOMElements.canvas.width / rect.width; const scaleY = AllDOMElements.canvas.height / rect.height; cropEndX = ((isTouch ? e.touches[0].clientX : e.clientX) - rect.left) * scaleX; cropEndY = ((isTouch ? e.touches[0].clientY : e.clientY) - rect.top) * scaleY; const img = new Image(); img.onload = () => { AllDOMElements.ctx.clearRect(0, 0, AllDOMElements.canvas.width, AllDOMElements.canvas.height); AllDOMElements.ctx.drawImage(img, 0, 0); AllDOMElements.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'; AllDOMElements.ctx.fillRect(0, 0, AllDOMElements.canvas.width, AllDOMElements.canvas.height); const x = Math.min(cropStartX, cropEndX); const y = Math.min(cropStartY, cropEndY); const w = Math.abs(cropEndX - cropStartX); const h = Math.abs(cropEndY - cropStartY); AllDOMElements.ctx.drawImage(img, x, y, w, h, x, y, w, h); }; img.src = originalImageOnLoad; }
+    handleCropSelectionEnd = function() { if (!selectingArea) { showToast('Recorte cancelado.', "info"); isCropping = false; AllDOMElements.cropBtn.querySelector('.btn-text').textContent = 'Recortar'; processAndDisplayImage(); setUIState(); return; } const x = Math.min(cropStartX, cropEndX); const y = Math.min(cropStartY, cropEndY); const width = Math.abs(cropEndX - cropStartX); const height = Math.abs(cropEndY - cropStartY); isCropping = false; selectingArea = false; AllDOMElements.cropBtn.querySelector('.btn-text').textContent = 'Recortar'; if (width < 20 || height < 20) { processAndDisplayImage(); setUIState(); return; } const tempCanvas = document.createElement('canvas'); tempCanvas.width = width; tempCanvas.height = height; const tempCtx = tempCanvas.getContext('2d'); const img = new Image(); img.onload = () => { tempCtx.drawImage(img, x, y, width, height, 0, 0, width, height); currentImage = tempCanvas.toDataURL('image/jpeg', 0.95); originalImageOnLoad = currentImage; showToast('Imagen recortada.', "success"); processAndDisplayImage(); }; img.src = originalImageOnLoad; }
     
-    function setButtonLoading(button, isLoading) {
-        const textSpan = button.querySelector('.btn-text');
-        if (!textSpan) return;
-        button.disabled = isLoading;
-        if (isLoading) {
-            textSpan.style.visibility = 'hidden';
-            if (!button.querySelector('.spinner')) {
-                const spinner = document.createElement('div');
-                spinner.className = 'spinner';
-                button.prepend(spinner);
-            }
-        } else {
-            textSpan.style.visibility = 'visible';
-            const spinner = button.querySelector('.spinner');
-            if (spinner) spinner.remove();
-        }
-    }
+    AllDOMElements.connectBtn.addEventListener('click', connectToChannel);
+    AllDOMElements.sendBtn.addEventListener('click', sendImageToChannel);
+    AllDOMElements.discardBtn.addEventListener('click', discardImage);
+    AllDOMElements.yearPrefixBtn.addEventListener('click', () => { const year = new Date().getFullYear().toString().slice(-2); AllDOMElements.textInput.value = `${year}-` + AllDOMElements.textInput.value.replace(/^\d{2}-/, ''); AllDOMElements.textInput.focus(); processAndDisplayImage(); });
+    AllDOMElements.downloadBtn.addEventListener('click', () => { const link = document.createElement('a'); const filename = AllDOMElements.textInput.value.trim().replace(/[^a-z0-9-]/gi, '_').toLowerCase() || `imagen_${Date.now()}`; link.download = filename + ".png"; link.href = AllDOMElements.canvas.toDataURL('image/png'); link.click(); });
+    [AllDOMElements.textInput, AllDOMElements.fontSizeInput, AllDOMElements.positionSelect].forEach(el => el.addEventListener('input', processAndDisplayImage));
+    AllDOMElements.colorOptions.forEach(option => { option.addEventListener('click', function() { document.querySelector('.color-option.selected').classList.remove('selected'); this.classList.add('selected'); processAndDisplayImage(); }); });
+    AllDOMElements.canvas.addEventListener('mousedown', (e) => handleCropSelectionStart(e)); AllDOMElements.canvas.addEventListener('mousemove', (e) => handleCropSelectionMove(e)); AllDOMElements.canvas.addEventListener('mouseup', handleCropSelectionEnd);
+    AllDOMElements.canvas.addEventListener('touchstart', (e) => handleCropSelectionStart(e, true)); AllDOMElements.canvas.addEventListener('touchmove', (e) => handleCropSelectionMove(e, true)); AllDOMElements.canvas.addEventListener('touchend', handleCropSelectionEnd);
     
-    function setUIState() {
-        const isConnected = !!currentChannelRef;
-        const hasImage = !!currentImage;
-        const isEditing = isCropping;
-        channelIdInput.disabled = isConnected;
-        connectBtn.querySelector('.btn-text').textContent = isConnected ? 'Desconectar' : 'Conectar';
-        statusDiv.textContent = isConnected ? `Conectado: Sala ${channelIdInput.value}` : 'Desconectado';
-        statusDiv.style.color = isConnected ? 'var(--success-color)' : 'var(--danger-color)';
-        captureSection.style.display = isConnected && !hasImage ? 'block' : 'none';
-        actionControls.style.display = hasImage ? 'block' : 'none';
-        placeholderText.style.display = hasImage ? 'none' : 'block';
-        sendBtn.disabled = !isConnected || !hasImage || isEditing;
-        downloadBtn.disabled = !hasImage || isEditing;
-        cropBtn.disabled = !hasImage || isEditing;
-        if (!isConnected) placeholderText.innerHTML = '<p>Conéctate a una sala para empezar.</p>';
-        else if (!hasImage) placeholderText.innerHTML = '<p>Captura una imagen.</p>';
-    }
-
-    function connectToChannel() {
-        if (currentChannelRef) {
-            currentChannelRef.off(); currentChannelRef = null; discardImage(); setUIState(); showToast('Desconectado de la sala.', 'info'); return;
-        }
-        const channelId = channelIdInput.value;
-        if (!channelId || channelId.length < 4) { showToast("Introduce un código de 4 dígitos.", "error"); return; }
-        setButtonLoading(connectBtn, true);
-        currentChannelRef = database.ref('channels/' + channelId);
-        currentChannelRef.on('value', (snapshot) => {
-            setButtonLoading(connectBtn, false);
-            const data = snapshot.val();
-            if (data && data.timestamp > lastReceivedTimestamp) {
-                lastReceivedTimestamp = data.timestamp;
-                currentImage = data.imageData;
-                originalImageOnLoad = currentImage;
-                textInput.value = data.textData || '';
-                processAndDisplayImage();
-                showToast("¡Nueva imagen recibida!", "success");
-            }
-            if(!statusDiv.textContent.includes('Conectado')) {
-                showToast(`Conectado a sala ${channelId}`, "success");
-                localStorage.setItem('lastChannelId', channelId);
-            }
-            setUIState();
-        }, (error) => {
-            showToast("Error de conexión: " + error.message, "error");
-            setButtonLoading(connectBtn, false); currentChannelRef = null; setUIState();
-        });
-    }
-
-    function sendImageToChannel() {
-        if (!currentChannelRef || !currentImage) return;
-        setButtonLoading(sendBtn, true);
-        canvas.toBlob(blob => {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                currentChannelRef.set({
-                    imageData: event.target.result,
-                    textData: textInput.value,
-                    timestamp: Date.now()
-                }).then(() => { showToast("¡Imagen enviada con éxito!", "success"); })
-                  .catch(error => { showToast("Error al enviar: " + error.message, "error"); })
-                  .finally(() => { setButtonLoading(sendBtn, false); });
-            };
-            reader.readAsDataURL(blob);
-        }, 'image/jpeg', 0.9);
-    }
-    
-    function processAndDisplayImage() {
-        if (!currentImage) return;
-        const img = new Image();
-        img.onload = () => {
-            canvas.width = img.width; canvas.height = img.height;
-            ctx.drawImage(img, 0, 0);
-            const text = textInput.value || '';
-            if (text.trim()) {
-                const fontSize = parseInt(fontSizeInput.value);
-                const position = positionSelect.value;
-                selectedColor = document.querySelector('.color-option.selected').dataset.color;
-                ctx.font = `bold ${fontSize}px Arial`;
-                ctx.fillStyle = selectedColor;
-                ctx.strokeStyle = selectedColor === 'white' ? 'black' : 'white';
-                ctx.lineWidth = Math.max(2, fontSize / 12);
-                const padding = Math.max(20, fontSize / 2);
-                const textMetrics = ctx.measureText(text);
-                let x, y;
-                switch (position) {
-                    case 'top-left': x = padding; y = fontSize + padding; break;
-                    case 'top-right': x = canvas.width - textMetrics.width - padding; y = fontSize + padding; break;
-                    case 'bottom-left': x = padding; y = canvas.height - padding; break;
-                    default: x = canvas.width - textMetrics.width - padding; y = canvas.height - padding; break;
-                }
-                ctx.strokeText(text, x, y); ctx.fillText(text, x, y);
-            }
-            if(!isCropping) {
-                previewImage.style.display = 'block'; canvas.style.display = 'none';
-                previewImage.src = canvas.toDataURL('image/png');
-            } else {
-                previewImage.style.display = 'none'; canvas.style.display = 'block';
-            }
-            setUIState();
-        };
-        img.src = currentImage;
-    }
-
-    function discardImage() {
-        originalImageOnLoad = null; currentImage = null; textInput.value = '';
-        previewImage.style.display = 'none'; canvas.style.display = 'none';
-        if (isCropping) { isCropping = false; cropBtn.querySelector('.btn-text').textContent = 'Recortar'; }
-        setUIState();
-    }
-
-    fileInput.addEventListener('change', e => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = e => {
-                originalImageOnLoad = e.target.result;
-                currentImage = e.target.result;
-                processAndDisplayImage();
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-
-    cropBtn.addEventListener('click', () => {
-        isCropping = !isCropping;
-        cropBtn.querySelector('.btn-text').textContent = isCropping ? 'Aplicar' : 'Recortar';
-        if(isCropping) {
-            currentImage = originalImageOnLoad;
-            showToast('Arrastra para seleccionar y pulsa "Aplicar" para finalizar.', "info");
-        } else {
-            handleCropSelectionEnd();
-        }
-        processAndDisplayImage();
-        setUIState();
-    });
-
-    function handleCropSelectionStart(e, isTouch = false) { if (!isCropping) return; if (isTouch) e.preventDefault(); selectingArea = true; const rect = canvas.getBoundingClientRect(); const scaleX = canvas.width / rect.width; const scaleY = canvas.height / rect.height; const clientX = isTouch ? e.touches[0].clientX : e.clientX; const clientY = isTouch ? e.touches[0].clientY : e.clientY; cropStartX = (clientX - rect.left) * scaleX; cropStartY = (clientY - rect.top) * scaleY; cropEndX = cropStartX; cropEndY = cropStartY; }
-    function handleCropSelectionMove(e, isTouch = false) { if (!isCropping || !selectingArea) return; if (isTouch) e.preventDefault(); const rect = canvas.getBoundingClientRect(); const scaleX = canvas.width / rect.width; const scaleY = canvas.height / rect.height; cropEndX = ((isTouch ? e.touches[0].clientX : e.clientX) - rect.left) * scaleX; cropEndY = ((isTouch ? e.touches[0].clientY : e.clientY) - rect.top) * scaleY; const img = new Image(); img.onload = () => { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0); ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'; ctx.fillRect(0, 0, canvas.width, canvas.height); const x = Math.min(cropStartX, cropEndX); const y = Math.min(cropStartY, cropEndY); const w = Math.abs(cropEndX - cropStartX); const h = Math.abs(cropEndY - cropStartY); ctx.drawImage(img, x, y, w, h, x, y, w, h); }; img.src = originalImageOnLoad; }
-    function handleCropSelectionEnd() {
-        if (!selectingArea) { showToast('Recorte cancelado.', "info"); return; }
-        const x = Math.min(cropStartX, cropEndX); const y = Math.min(cropStartY, cropEndY);
-        const width = Math.abs(cropEndX - cropStartX); const height = Math.abs(cropEndY - cropStartY);
-        
-        isCropping = false; selectingArea = false;
-        cropBtn.querySelector('.btn-text').textContent = 'Recortar';
-        
-        if (width < 20 || height < 20) { processAndDisplayImage(); setUIState(); return; }
-        const tempCanvas = document.createElement('canvas'); tempCanvas.width = width; tempCanvas.height = height;
-        const tempCtx = tempCanvas.getContext('2d'); const img = new Image();
-        img.onload = () => { tempCtx.drawImage(img, x, y, width, height, 0, 0, width, height); currentImage = tempCanvas.toDataURL('image/jpeg', 0.95); originalImageOnLoad = currentImage; showToast('Imagen recortada.', "success"); processAndDisplayImage(); };
-        img.src = originalImageOnLoad;
-    }
-
-    // --- ASIGNACIÓN DE EVENTOS ---
-    connectBtn.addEventListener('click', connectToChannel);
-    sendBtn.addEventListener('click', sendImageToChannel);
-    discardBtn.addEventListener('click', discardImage);
-    yearPrefixBtn.addEventListener('click', () => {
-        const year = new Date().getFullYear().toString().slice(-2);
-        textInput.value = `${year}-` + textInput.value.replace(/^\d{2}-/, '');
-        textInput.focus();
-        processAndDisplayImage();
-    });
-    downloadBtn.addEventListener('click', () => {
-        const link = document.createElement('a');
-        const filename = textInput.value.trim().replace(/[^a-z0-9-]/gi, '_').toLowerCase() || `imagen_${Date.now()}`;
-        link.download = filename + ".png";
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-    });
-    [textInput, fontSizeInput, positionSelect].forEach(el => el.addEventListener('input', processAndDisplayImage));
-    colorOptions.forEach(option => { option.addEventListener('click', function() { document.querySelector('.color-option.selected').classList.remove('selected'); this.classList.add('selected'); processAndDisplayImage(); }); });
-    canvas.addEventListener('mousedown', (e) => handleCropSelectionStart(e)); canvas.addEventListener('mousemove', (e) => handleCropSelectionMove(e)); canvas.addEventListener('mouseup', handleCropSelectionEnd);
-    canvas.addEventListener('touchstart', (e) => handleCropSelectionStart(e, true)); canvas.addEventListener('touchmove', (e) => handleCropSelectionMove(e, true)); canvas.addEventListener('touchend', handleCropSelectionEnd);
-    
-    // --- REGISTRO DEL SERVICE WORKER (PARA PWA) ---
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js').then(registration => {
-                console.log('ServiceWorker registrado con éxito: ', registration.scope);
-            }, err => {
-                console.log('Fallo en el registro del ServiceWorker: ', err);
-            });
-        });
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        channelIdInput.value = localStorage.getItem('lastChannelId') || '';
-        setUIState();
-    });
+    if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').then(reg => console.log('SW Registrado!', reg)).catch(err => console.log('Fallo de SW:', err)); }); }
+    document.addEventListener('DOMContentLoaded', () => { AllDOMElements.channelIdInput.value = localStorage.getItem('lastChannelId') || ''; setUIState(); });
     </script>
 </body>
 </html>
