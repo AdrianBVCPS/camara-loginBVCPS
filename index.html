@@ -56,6 +56,12 @@
         .button-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
 
         hr { border: none; border-top: 1px solid var(--light-grey); margin: 1.5rem 0; }
+        .color-select { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+        .color-option { width: 35px; height: 35px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: all 0.2s; }
+        .color-option.selected { border-color: var(--primary-color); transform: scale(1.1); }
+        input[type="range"] { width: 100%; -webkit-appearance: none; margin: 0.5rem 0; background: var(--light-grey); height: 8px; border-radius: 5px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; border-radius: 50%; background: var(--primary-color); cursor: pointer; }
+        input[type="range"]::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%; background: var(--primary-color); cursor: pointer; }
         
         .spinner { border: 3px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: var(--white); width: 1.1em; height: 1.1em; animation: spin 1s ease-in-out infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -97,7 +103,7 @@
                     </div>
 
                     <div id="actionControls" style="display:none;">
-                         <hr>
+                        <hr>
                         <div class="form-group">
                             <label for="textInput">Texto (nombre del archivo):</label>
                             <div class="input-group">
@@ -105,26 +111,45 @@
                                 <button id="yearPrefixBtn" class="btn btn-secondary btn-icon" title="Añadir prefijo del año actual">Año</button>
                             </div>
                         </div>
-                        <!-- Resto de controles omitidos en el código final por brevedad, pero puedes añadirlos fácilmente -->
-                        <hr>
+                        
+                        <!-- CONTROLES RESTAURADOS -->
                         <div class="form-group">
+                            <label for="fontSizeInput">Tamaño de fuente:</label>
+                            <input type="range" id="fontSizeInput" min="12" max="250" value="48">
+                        </div>
+                        <div class="form-group">
+                            <label>Color del texto:</label>
+                            <div class="color-select">
+                                <div class="color-option selected" style="background-color: white;" data-color="white"></div>
+                                <div class="color-option" style="background-color: black;" data-color="black"></div>
+                            </div>
+                        </div>
+                         <div class="form-group">
+                            <label for="positionSelect">Posición del texto:</label>
+                            <select id="positionSelect">
+                                <option value="top-left">Superior Izquierda</option>
+                                <option value="top-right">Superior Derecha</option>
+                                <option value="bottom-left">Inferior Izquierda</option>
+                                <option value="bottom-right" selected>Inferior Derecha</option>
+                            </select>
+                        </div>
+                        <!-- FIN DE CONTROLES RESTAURADOS -->
+
+                        <hr>
+                        <div class="button-grid">
                             <button id="sendBtn" class="btn btn-primary">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" /></svg>
                                 <span class="btn-text">Enviar</span>
                             </button>
-                        </div>
-                        <div class="button-grid">
-                            <button id="downloadBtn" class="btn btn-secondary">
+                            <button id="downloadBtn" class="btn btn-primary">
                                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M12 2.25a.75.75 0 01.75.75v11.69l3.22-3.22a.75.75 0 111.06 1.06l-4.5 4.5a.75.75 0 01-1.06 0l-4.5-4.5a.75.75 0 111.06-1.06l3.22 3.22V3a.75.75 0 01.75-.75zm-9 13.5a.75.75 0 01.75.75v2.25a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5V16.5a.75.75 0 011.5 0v2.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V16.5a.75.75 0 01.75-.75z" clip-rule="evenodd" /></svg>
                                 <span class="btn-text">Descargar</span>
                             </button>
-                             <button id="cropBtn" class="btn btn-secondary">
+                            <button id="cropBtn" class="btn btn-secondary">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M7.5 3.375c0-1.036.84-1.875 1.875-1.875h.375a3.75 3.75 0 013.75 3.75v1.875h-1.5V7.125a2.25 2.25 0 00-2.25-2.25h-.375a.375.375 0 00-.375.375V18h-1.5V3.375z" /><path d="M15 5.25a2.25 2.25 0 012.25 2.25v10.5h1.5V7.5a3.75 3.75 0 00-3.75-3.75h-.375a1.875 1.875 0 00-1.875 1.875v12.75h1.5V5.25z" /></svg>
                                 <span class="btn-text">Recortar</span>
                             </button>
-                        </div>
-                        <div class="form-group">
-                             <button id="discardBtn" class="btn btn-danger" style="background-color: transparent; color: var(--danger-color); border: 1px solid var(--danger-color);">
+                             <button id="discardBtn" class="btn btn-secondary">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 013.878.512.75.75 0 11-.256 1.478l-.209-.035-1.005 13.006a.75.75 0 01-.75.742H5.625a.75.75 0 01-.75-.742L3.87 6.664l-.209.035a.75.75 0 01-.256-1.478A48.567 48.567 0 017.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 013.369 0c1.603.051 2.815 1.387 2.815 2.951zm-6.136-1.452a51.109 51.109 0 013.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 00-6 0v-.113c0-.794.609-1.428 1.364-1.452z" clip-rule="evenodd" /></svg>
                                 <span class="btn-text">Descartar</span>
                             </button>
@@ -141,6 +166,7 @@
     <div id="toast" class="toast-notification"><span id="toast-icon"></span><span id="toast-message"></span></div>
     
     <script>
+    // --- PEGA TU CONFIGURACIÓN DE FIREBASE AQUÍ ---
     const firebaseConfig = {
       apiKey: "AIzaSyAbahVsQxI_HOz_yPtDlp4hXSdZO0dvRl4",
       authDomain: "camara-app-lugo.firebaseapp.com",
@@ -151,7 +177,8 @@
       appId: "1:437448426207:web:a9dbecc8cbdb77d0c4df6a",
       measurementId: "G-HXTN98NTPS"
     };
-    
+    // --------------------------------------------------------
+
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
@@ -159,12 +186,13 @@
     const fileInput = document.getElementById('fileInput'), captureSection = document.getElementById('captureSection');
     const actionControls = document.getElementById('actionControls'), sendBtn = document.getElementById('sendBtn');
     const textInput = document.getElementById('textInput'), yearPrefixBtn = document.getElementById('yearPrefixBtn');
+    const fontSizeInput = document.getElementById('fontSizeInput'), colorOptions = document.querySelectorAll('.color-option'), positionSelect = document.getElementById('positionSelect');
     const downloadBtn = document.getElementById('downloadBtn'), cropBtn = document.getElementById('cropBtn'), discardBtn = document.getElementById('discardBtn');
     const previewImage = document.getElementById('previewImage'), placeholderText = document.getElementById('placeholderText');
     const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
     const toast = document.getElementById('toast'), toastMessage = document.getElementById('toast-message'), toastIcon = document.getElementById('toast-icon');
     
-    let originalImageOnLoad = null, currentImage = null, currentChannelRef = null;
+    let originalImageOnLoad = null, currentImage = null, currentChannelRef = null, selectedColor = 'white';
     let isCropping = false, selectingArea = false, cropStartX = 0, cropStartY = 0, cropEndX = 0, cropEndY = 0;
     let lastReceivedTimestamp = 0, toastTimeout;
 
@@ -271,9 +299,9 @@
             ctx.drawImage(img, 0, 0);
             const text = textInput.value || '';
             if (text.trim()) {
-                const fontSize = parseInt(document.getElementById('fontSizeInput').value);
-                const position = document.getElementById('positionSelect').value;
-                const selectedColor = document.querySelector('.color-option.selected').dataset.color;
+                const fontSize = parseInt(fontSizeInput.value);
+                const position = positionSelect.value;
+                selectedColor = document.querySelector('.color-option.selected').dataset.color;
                 ctx.font = `bold ${fontSize}px Arial`;
                 ctx.fillStyle = selectedColor;
                 ctx.strokeStyle = selectedColor === 'white' ? 'black' : 'white';
@@ -368,7 +396,7 @@
         link.click();
     });
     [textInput, fontSizeInput, positionSelect].forEach(el => el.addEventListener('input', processAndDisplayImage));
-    document.querySelectorAll('.color-option').forEach(option => { option.addEventListener('click', function() { document.querySelector('.color-option.selected').classList.remove('selected'); this.classList.add('selected'); processAndDisplayImage(); }); });
+    colorOptions.forEach(option => { option.addEventListener('click', function() { document.querySelector('.color-option.selected').classList.remove('selected'); this.classList.add('selected'); processAndDisplayImage(); }); });
     canvas.addEventListener('mousedown', (e) => handleCropSelectionStart(e)); canvas.addEventListener('mousemove', (e) => handleCropSelectionMove(e)); canvas.addEventListener('mouseup', handleCropSelectionEnd);
     canvas.addEventListener('touchstart', (e) => handleCropSelectionStart(e, true)); canvas.addEventListener('touchmove', (e) => handleCropSelectionMove(e, true)); canvas.addEventListener('touchend', handleCropSelectionEnd);
     
@@ -376,7 +404,6 @@
         channelIdInput.value = localStorage.getItem('lastChannelId') || '';
         setUIState();
     });
-
     </script>
 </body>
 </html>
