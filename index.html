@@ -111,8 +111,6 @@
                                 <button id="yearPrefixBtn" class="btn btn-secondary btn-icon" title="Añadir prefijo del año actual">Año</button>
                             </div>
                         </div>
-                        
-                        <!-- CONTROLES RESTAURADOS -->
                         <div class="form-group">
                             <label for="fontSizeInput">Tamaño de fuente:</label>
                             <input type="range" id="fontSizeInput" min="12" max="250" value="48">
@@ -133,8 +131,6 @@
                                 <option value="bottom-right" selected>Inferior Derecha</option>
                             </select>
                         </div>
-                        <!-- FIN DE CONTROLES RESTAURADOS -->
-
                         <hr>
                         <div class="button-grid">
                             <button id="sendBtn" class="btn btn-primary">
@@ -166,7 +162,6 @@
     <div id="toast" class="toast-notification"><span id="toast-icon"></span><span id="toast-message"></span></div>
     
     <script>
-    // --- PEGA TU CONFIGURACIÓN DE FIREBASE AQUÍ ---
     const firebaseConfig = {
       apiKey: "AIzaSyAbahVsQxI_HOz_yPtDlp4hXSdZO0dvRl4",
       authDomain: "camara-app-lugo.firebaseapp.com",
@@ -177,8 +172,7 @@
       appId: "1:437448426207:web:a9dbecc8cbdb77d0c4df6a",
       measurementId: "G-HXTN98NTPS"
     };
-    // --------------------------------------------------------
-
+    
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
@@ -210,6 +204,7 @@
     function setButtonLoading(button, isLoading) {
         const textSpan = button.querySelector('.btn-text');
         if (!textSpan) return;
+        button.disabled = isLoading;
         if (isLoading) {
             textSpan.style.visibility = 'hidden';
             if (!button.querySelector('.spinner')) {
@@ -222,7 +217,6 @@
             const spinner = button.querySelector('.spinner');
             if (spinner) spinner.remove();
         }
-        button.disabled = isLoading;
     }
     
     function setUIState() {
@@ -400,6 +394,17 @@
     canvas.addEventListener('mousedown', (e) => handleCropSelectionStart(e)); canvas.addEventListener('mousemove', (e) => handleCropSelectionMove(e)); canvas.addEventListener('mouseup', handleCropSelectionEnd);
     canvas.addEventListener('touchstart', (e) => handleCropSelectionStart(e, true)); canvas.addEventListener('touchmove', (e) => handleCropSelectionMove(e, true)); canvas.addEventListener('touchend', handleCropSelectionEnd);
     
+    // --- REGISTRO DEL SERVICE WORKER (PARA PWA) ---
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js').then(registration => {
+                console.log('ServiceWorker registrado con éxito: ', registration.scope);
+            }, err => {
+                console.log('Fallo en el registro del ServiceWorker: ', err);
+            });
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         channelIdInput.value = localStorage.getItem('lastChannelId') || '';
         setUIState();
