@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDITOR DE CÁMARA - BUREAU VERITAS</title>
+    <!-- Favicon and PWA stuff -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <!-- Library for QR Code Generation -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1/build/qrcode.min.js"></script>
+
+    <style>
+        :root { /* Light Theme */
+            --primary-color: #E4002B; --secondary-color: #424242; --background-color: #F8F9FA;
+            --surface-color: #FFFFFF; --input-border-color: #CED4DA; --text-color: #212529;
+            --text-secondary-color: #6C757D; --success-color: #198754; --danger-color: #DC3545;
+        }
+        .dark { /* Dark Theme */
+            --secondary-color: #A0A0A0; --background-color: #121212; --surface-color: #1E1E1E;
+            --input-border-color: #555555; --text-color: #EAEAEA; --text-secondary-color: #A0A0A0;
+        }
+        body { font-family: 'Spline Sans', sans-serif; background-color: var(--background-color); color: var(--text-color); transition: background-color 0.3s, color 0.3s; }
+        .spinner { border: 3px solid rgba(0,0,0,0.2); border-radius: 50%; border-top-color: var(--primary-color); width: 1.2em; height: 1.2em; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .tool-btn.active { background-color: var(--primary-color) !important; color: white !important; }
+        .toast-notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); z-index: 5001; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .toast-notification.show { bottom: 20px; }
+        .cropping #canvas { cursor: crosshair; }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="flex flex-col h-screen">
+        <!-- HEADER -->
+        <header class="flex items-center justify-between p-4 border-b border-[var(--input-border-color)] flex-shrink-0">
+             <h1 class="text-[var(--text-color)] text-lg font-bold tracking-tight">
+                <span style="color: var(--primary-color);">EDITOR DE CÁMARA</span>
+                <span class="text-[var(--text-secondary-color)]">BUREAU VERITAS CPS LUGO</span>
+            </h1>
+            <button id="themeToggle" class="p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" title="Cambiar tema"></button>
+        </header>
+
+        <main class="flex flex-1 overflow-hidden">
+            <!-- Controls Pane -->
+            <aside class="w-96 p-4 overflow-y-auto border-r border-[var(--input-border-color)] flex-shrink-0">
+                <div class="space-y-4">
+                    <!-- Connection -->
+                    <div class="p-4 rounded-lg bg-[var(--surface-color)] border border-[var(--input-border-color)]">
+                        <label class="font-semibold mb-2 block">Conexión</label>
+                        <div class="flex items-center gap-2">
+                            <input type="number" id="channelId" placeholder="Código de 4 dígitos" class="w-full rounded-lg text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] border border-[var(--input-border-color)] bg-transparent h-10 p-2">
+                            <button id="connectBtn" class="relative flex-shrink-0 h-10 px-4 rounded-lg bg-[var(--primary-color)] text-white font-bold disabled:bg-gray-400">Conectar</button>
+                        </div>
+                        <div id="qrContainer" class="mt-4 text-center hidden">
+                            <canvas id="qrCanvas"></canvas>
+                            <p class="text-xs text-[var(--text-secondary-color)] mt-2">Escanea este código desde el móvil</p>
+                        </div>
+                        <div id="status" class="text-center text-sm font-semibold mt-3">Desconectado</div>
+                    </div>
+
+                    <!-- Image Tools -->
+                     <div class="p-4 rounded-lg bg-[var(--surface-color)] border border-[var(--input-border-color)]">
+                        <label class="font-semibold mb-2 block">Herramientas</label>
+                         <div class="grid grid-cols-5 gap-2 text-center">
+                            <button id="undoBtn" title="Deshacer" class="tool-btn p-2 rounded-lg text-[var(--secondary-color)] bg-gray-100 dark:bg-gray-700 disabled:opacity-50" disabled>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8a5 5 0 0 1 0 10H9" /></svg>
+                            </button>
+                            <button id="rotateBtn" title="Rotar" class="tool-btn p-2 rounded-lg text-[var(--secondary-color)] bg-gray-100 dark:bg-gray-700 disabled:opacity-50" disabled><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M4 20h5v-5M20 4h-5v5" /></svg></button>
+                            <button id="cropBtn" title="Recortar" class="tool-btn p-2 rounded-lg text-[var(--secondary-color)] bg-gray-100 dark:bg-gray-700 disabled:opacity-50" disabled><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 mx-auto"><path d="M7.5 3.375c0-1.036.84-1.875 1.875-1.875h.375a3.75 3.75 0 013.75 3.75v1.875h-1.5V7.125a2.25 2.25 0 00-2.25-2.25h-.375a.375.375 0 00-.375.375V18h-1.5V3.375z" /><path d="M15 5.25a2.25 2.25 0 012.25 2.25v10.5h1.5V7.5a3.75 3.75 0 00-3.75-3.75h-.375a1.875 1.875 0 00-1.875 1.875v12.75h1.5V5.25z" /></svg></button>
+                            <button id="drawModeBtn" title="Dibujar" class="tool-btn p-2 rounded-lg text-[var(--secondary-color)] bg-gray-100 dark:bg-gray-700 disabled:opacity-50" disabled><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
+                            <button id="resetImageBtn" title="Restaurar Imagen Original" class="tool-btn p-2 rounded-lg text-[var(--secondary-color)] bg-gray-100 dark:bg-gray-700 disabled:opacity-50" disabled><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M4 20h5v-5M20 4h-5v5" /></svg></button>
+                         </div>
+                    </div>
+
+                    <!-- Image Adjustments -->
+                     <div class="p-4 rounded-lg bg-[var(--surface-color)] border border-[var(--input-border-color)]">
+                        <label class="font-semibold mb-2 block">Ajustes de Imagen</label>
+                        <div class="space-y-3">
+                             <div class="slider-container"><label class="text-xs font-semibold">Brillo</label><input type="range" class="image-filter" data-filter="brightness" min="0" max="2" value="1" step="0.05" disabled></div>
+                             <div class="slider-container"><label class="text-xs font-semibold">Contraste</label><input type="range" class="image-filter" data-filter="contrast" min="0" max="2" value="1" step="0.05" disabled></div>
+                             <div class="slider-container"><label class="text-xs font-semibold">Saturación</label><input type="range" class="image-filter" data-filter="saturate" min="0" max="2" value="1" step="0.05" disabled></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Text Request -->
+                     <div class="p-4 rounded-lg bg-[var(--surface-color)] border border-[var(--input-border-color)]">
+                        <label class="font-semibold mb-2 block">Request</label>
+                         <input type="text" id="textInput" class="w-full rounded-lg text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] border border-[var(--input-border-color)] bg-transparent h-10 p-2" disabled>
+                        <div class="grid grid-cols-2 gap-4 mt-2">
+                             <div>
+                                <label for="fontSizeInput" class="text-xs font-semibold">Tamaño</label>
+                                <input type="range" id="fontSizeInput" min="12" max="500" value="150" class="w-full" disabled>
+                            </div>
+                            <div>
+                                <label class="text-xs font-semibold block">Color</label>
+                                <div class="flex gap-2 mt-1">
+                                    <input type="radio" name="color" data-color="white" class="appearance-none w-6 h-6 bg-white rounded-full cursor-pointer checked:ring-2 checked:ring-offset-2 checked:ring-[var(--primary-color)]" disabled>
+                                    <input type="radio" name="color" data-color="black" class="appearance-none w-6 h-6 bg-black rounded-full cursor-pointer checked:ring-2 checked:ring-offset-2 checked:ring-[var(--primary-color)]" disabled>
+                                    <input type="radio" name="color" data-color="#E4002B" class="appearance-none w-6 h-6 bg-[var(--primary-color)] rounded-full cursor-pointer checked:ring-2 checked:ring-offset-2 checked:ring-[var(--primary-color)]" disabled>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                             <label for="positionSelect" class="text-xs font-semibold">Posición</label>
+                             <select id="positionSelect" class="w-full mt-1 rounded-lg text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] border border-[var(--input-border-color)] bg-transparent h-10 p-2" disabled></select>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="p-4 rounded-lg bg-[var(--surface-color)] border border-[var(--input-border-color)]">
+                         <label class="font-semibold mb-2 block">Acciones</label>
+                         <button id="downloadBtn" class="w-full h-10 bg-[var(--primary-color)] text-white font-bold text-sm rounded-lg disabled:bg-gray-400" disabled>Descargar Imagen</button>
+                    </div>
+                </div>
+            </aside>
+            
+            <!-- Main Content: Canvas -->
+            <main class="flex-1 bg-gray-200 dark:bg-gray-900 flex items-center justify-center p-4">
+                <canvas id="canvas" class="max-w-full max-h-full object-contain shadow-lg"></canvas>
+                 <div id="placeholderText" class="text-center text-[var(--text-secondary-color)]">
+                    <p class="text-2xl font-bold">Esperando imagen del móvil...</p>
+                    <p>Conecta un dispositivo móvil a la sala para empezar.</p>
+                </div>
+            </main>
+        </main>
+    </div>
+    <div id="toast" class="toast-notification bg-gray-800 text-white py-3 px-6 rounded-full shadow-lg">
+        <span id="toast-message"></span>
+    </div>
+<script>
+// --- FIREBASE & APP CONFIG ---
+const firebaseConfig = { apiKey: "AIzaSyAbahVsQxI_HOz_yPtDlp4hXSdZO0dvRl4", authDomain: "camara-app-lugo.firebaseapp.com", databaseURL: "https://camara-app-lugo-default-rtdb.europe-west1.firebasedatabase.app", projectId: "camara-app-lugo", storageBucket: "camara-app-lugo.appspot.com", messagingSenderId: "437448426207", appId: "1:437448426207:web:a9dbecc8cbdb77d0c4df6a" };
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+
+// --- DOM ELEMENTS ---
+const get = id => document.getElementById(id);
+const channelIdInput = get('channelId'), connectBtn = get('connectBtn'), statusDiv = get('status');
+const textInput = get('textInput'), fontSizeInput = get('fontSizeInput'), positionSelect = get('positionSelect');
+const downloadBtn = get('downloadBtn'), cropBtn = get('cropBtn'), rotateBtn = get('rotateBtn');
+const drawModeBtn = get('drawModeBtn'), resetImageBtn = get('resetImageBtn'), undoBtn = get('undoBtn');
+const canvas = get('canvas'), ctx = canvas.getContext('2d'), placeholderText = get('placeholderText');
+const themeToggle = get('themeToggle'), qrContainer = get('qrContainer');
+
+// --- APP STATE ---
+let currentImage = null, originalImage = null, currentChannelRef = null, lastReceivedTimestamp = 0;
+let isCropping = false, isDrawing = false;
+let cropStartX = 0, cropStartY = 0, cropEndX = 0, cropEndY = 0;
+let history = [];
+let toastTimeout;
+
+// --- THEME & UI ---
+const sunIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.106a.75.75 0 010 1.06l-1.591 1.59a.75.75 0 11-1.06-1.06l1.59-1.591a.75.75 0 011.06 0zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.894 17.894a.75.75 0 011.06 0l1.59 1.591a.75.75 0 11-1.06 1.06l-1.591-1.59a.75.75 0 010-1.06zM12 21a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V21.75A.75.75 0 0112 21zM5.106 17.894a.75.75 0 010-1.06l1.591-1.59a.75.75 0 111.06 1.06l-1.59 1.591a.75.75 0 01-1.06 0zM3 12a.75.75 0 01.75-.75h2.25a.75.75 0 010 1.5H3.75A.75.75 0 013 12zM6.106 6.106a.75.75 0 011.06 0l1.591 1.59a.75.75 0 111.06-1.06l-1.59-1.591a.75.75 0 010-1.06z" /></svg>`;
+const moonIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path fill-rule="evenodd" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 004.472-.69a.75.75 0 01.82.162l.805.806a.75.75 0 01-.162.82a10.488 10.488 0 01-5.05 3.402A10.488 10.488 0 019.5 21a10.5 10.5 0 01-10.236-9.273A10.488 10.488 0 015.05 1.936a.75.75 0 01.82-.162l.806.805a.75.75 0 01.162.82zM10.25 11.25a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75h-.008a.75.75 0 01-.75-.75v-.008zM12.25 7.5a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75h-.008a.75.75 0 01-.75-.75V7.5z" clip-rule="evenodd" /></svg>`;
+function applyTheme(theme) { document.documentElement.classList.toggle('dark', theme === 'dark'); themeToggle.innerHTML = theme === 'dark' ? sunIcon : moonIcon; }
+themeToggle.addEventListener('click', () => { const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark'; localStorage.setItem('theme', newTheme); applyTheme(newTheme); });
+function showToast(message, type = 'info', duration = 3000) { const toast = get('toast'), toastMessage = get('toast-message'); clearTimeout(toastTimeout); toastMessage.textContent = message; toast.className = 'toast-notification bg-gray-800 text-white py-3 px-6 rounded-full shadow-lg show'; toast.classList.remove('bg-green-600', 'bg-red-600'); if (type === 'success') toast.classList.add('bg-green-600'); if (type === 'error') toast.classList.add('bg-red-600'); toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, duration); }
+function setButtonLoading(button, isLoading, originalText) { if(!button) return; button.disabled = isLoading; if(isLoading) { button.innerHTML = `<div class="spinner mx-auto"></div>`; } else { button.innerHTML = originalText; } }
+function saveSettings() { const settings = { fontSize: fontSizeInput.value, color: document.querySelector('input[name="color"]:checked').dataset.color, position: positionSelect.value }; localStorage.setItem('desktopPrefs', JSON.stringify(settings)); }
+function loadSettings() {
+    const prefs = JSON.parse(localStorage.getItem('desktopPrefs'));
+    if (prefs) {
+        fontSizeInput.value = prefs.fontSize || 150; positionSelect.value = prefs.position || 'bottom-right';
+        const colorInput = document.querySelector(`input[name="color"][data-color="${prefs.color || 'white'}"]`);
+        if (colorInput) colorInput.checked = true;
+    }
+}
+function enableAllControls(enabled) {
+    [textInput, fontSizeInput, positionSelect, downloadBtn, cropBtn, rotateBtn, drawModeBtn, resetImageBtn, undoBtn, ...document.querySelectorAll('.image-filter'), ...document.querySelectorAll('input[name="color"]')].forEach(el => el.disabled = !enabled);
+    undoBtn.disabled = history.length === 0;
+}
+
+// --- HISTORY & UNDO ---
+function saveState() {
+    history.push(canvas.toDataURL());
+    if (history.length > 10) history.shift(); // Limit history size
+    undoBtn.disabled = false;
+}
+function undo() {
+    if (history.length <= 1) { // Keep the first state
+        showToast('No hay más acciones que deshacer', 'info');
+        undoBtn.disabled = true;
+        return;
+    }
+    history.pop(); // Remove current state
+    const lastState = history[history.length - 1]; // Get previous state
+    currentImage = lastState;
+    originalImage = lastState; // This state becomes the new "original" for filters
+    renderCanvas();
+    undoBtn.disabled = history.length <= 1;
+}
+
+// --- CORE APP LOGIC ---
+function setUIState(isConnected) {
+    channelIdInput.disabled = isConnected; connectBtn.textContent = isConnected ? 'Desconectar' : 'Conectar';
+    statusDiv.textContent = isConnected ? `Conectado: Sala ${channelIdInput.value}` : 'Desconectado';
+    statusDiv.style.color = isConnected ? 'var(--success-color)' : 'var(--danger-color)';
+    qrContainer.classList.toggle('hidden', !isConnected);
+    if(isConnected) { QRCode.toCanvas(get('qrCanvas'), channelIdInput.value, { width: 128 }, error => { if (error) console.error(error); }); }
+}
+function connectToChannel() {
+    if (currentChannelRef) {
+        currentChannelRef.off(); currentChannelRef = null; setUIState(false); showToast('Desconectado de la sala.', 'info'); return;
+    }
+    let channelId = channelIdInput.value;
+    if (!channelId || channelId.length !== 4) { channelId = Math.floor(1000 + Math.random() * 9000).toString(); channelIdInput.value = channelId; }
+    setButtonLoading(connectBtn, true, 'Conectar');
+    currentChannelRef = database.ref('channels/' + channelId);
+    currentChannelRef.on('value', (snapshot) => {
+        setButtonLoading(connectBtn, false, 'Desconectar');
+        const data = snapshot.val();
+        if (data && data.timestamp > lastReceivedTimestamp) {
+            lastReceivedTimestamp = data.timestamp; processNewImage(data.imageData); showToast("¡Nueva imagen recibida!", "success");
+        }
+        if(!statusDiv.textContent.includes('Conectado')) {
+            showToast(`Conectado a la sala ${channelId}`, "success"); localStorage.setItem('lastChannelId', channelId);
+        }
+        setUIState(true);
+    }, (error) => { showToast("Error de conexión: " + error.message, "error"); setButtonLoading(connectBtn, false, 'Conectar'); currentChannelRef = null; setUIState(false); });
+}
+
+// --- IMAGE PROCESSING & DRAWING ---
+function renderCanvas() {
+    if (!currentImage) return;
+    const img = new Image();
+    img.onload = () => {
+        canvas.width = img.width; canvas.height = img.height;
+        const filters = Array.from(document.querySelectorAll('.image-filter')).map(f => `${f.dataset.filter}(${f.value})`).join(' ');
+        ctx.filter = filters;
+        ctx.drawImage(img, 0, 0);
+        ctx.filter = 'none';
+        const text = textInput.value.trim();
+        if (text) {
+            const fontSize = parseInt(fontSizeInput.value, 10);
+            const position = positionSelect.value;
+            const selectedColor = document.querySelector('input[name="color"]:checked').dataset.color;
+            ctx.font = `bold ${fontSize}px Arial`; ctx.fillStyle = selectedColor;
+            ctx.strokeStyle = (selectedColor === 'white' || selectedColor === '#E4002B') ? 'black' : 'white';
+            ctx.lineWidth = Math.max(2, fontSize / 12);
+            const padding = Math.max(20, fontSize / 2);
+            const textMetrics = ctx.measureText(text);
+            let x, y;
+            if (position === 'top-left') { x = padding; y = fontSize + padding; }
+            else if (position === 'top-right') { x = canvas.width - textMetrics.width - padding; y = fontSize + padding; }
+            else if (position === 'bottom-left') { x = padding; y = canvas.height - padding; }
+            else { x = canvas.width - textMetrics.width - padding; y = canvas.height - padding; }
+            ctx.strokeText(text, x, y); ctx.fillText(text, x, y);
+        }
+    };
+    img.src = currentImage;
+}
+function processNewImage(imageData) {
+    originalImage = imageData; currentImage = imageData;
+    history = [originalImage];
+    placeholderText.style.display = 'none'; canvas.style.display = 'block';
+    document.querySelectorAll('.image-filter').forEach(f => f.value = 1);
+    enableAllControls(true);
+    renderCanvas();
+}
+function resetImage() { currentImage = originalImage; isDrawing = false; isCropping = false; drawModeBtn.classList.remove('active'); cropBtn.classList.remove('active'); canvas.style.cursor = 'default'; saveState(); renderCanvas(); }
+function rotateImage() { if (!currentImage) return; saveState(); const img = new Image(); img.onload = () => { const tempCanvas = document.createElement('canvas'); const tempCtx = tempCanvas.getContext('2d'); tempCanvas.width = img.height; tempCanvas.height = img.width; tempCtx.translate(tempCanvas.width / 2, tempCanvas.height / 2); tempCtx.rotate(90 * Math.PI / 180); tempCtx.drawImage(img, -img.width / 2, -img.height / 2); currentImage = tempCanvas.toDataURL('image/jpeg', 0.95); renderCanvas(); }; img.src = currentImage; }
+function setupDrawingAndCropping() {
+    let lastX = 0, lastY = 0, isDown = false;
+    const getPos = (e) => { const rect = canvas.getBoundingClientRect(); return [(e.clientX - rect.left) * (canvas.width / rect.width), (e.clientY - rect.top) * (canvas.height / rect.height)]; }
+    const start = (e) => { if (!isDrawing && !isCropping) return; e.preventDefault(); isDown = true; saveState(); [lastX, lastY] = getPos(e); if (isCropping) { cropStartX = lastX; cropStartY = lastY; } };
+    const draw = (e) => {
+        if (!isDown) return; e.preventDefault();
+        const [x, y] = getPos(e);
+        if (isDrawing) { ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(x, y); ctx.strokeStyle = document.querySelector('input[name="color"]:checked').dataset.color; ctx.lineWidth = 5 * (canvas.width / 800); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke(); }
+        if (isCropping) { renderCanvas(); ctx.fillStyle = 'rgba(0, 120, 255, 0.3)'; ctx.fillRect(cropStartX, cropStartY, x - cropStartX, y - cropStartY); }
+        [lastX, lastY] = [x, y];
+    };
+    const stop = (e) => { if (isDown) { if (isDrawing) { currentImage = canvas.toDataURL('image/jpeg', 0.95); } if (isCropping) { cropEndX = lastX; cropEndY = lastY; applyCrop(); } } isDown = false; };
+    ['mousedown'].forEach(evt => canvas.addEventListener(evt, start));
+    ['mousemove'].forEach(evt => canvas.addEventListener(evt, draw));
+    ['mouseup', 'mouseleave'].forEach(evt => canvas.addEventListener(evt, stop));
+}
+function applyCrop() {
+    const x = Math.min(cropStartX, cropEndX); const y = Math.min(cropStartY, cropEndY);
+    const width = Math.abs(cropEndX - cropStartX); const height = Math.abs(cropEndY - cropStartY);
+    if (width < 20 || height < 20) { renderCanvas(); return; }
+    const tempCanvas = document.createElement('canvas'); tempCanvas.width = width; tempCanvas.height = height;
+    const tempCtx = tempCanvas.getContext('2d');
+    const img = new Image();
+    img.onload = () => { tempCtx.drawImage(img, x, y, width, height, 0, 0, width, height); currentImage = tempCanvas.toDataURL('image/jpeg'); renderCanvas(); };
+    img.src = canvas.toDataURL();
+}
+
+// --- EVENT LISTENERS ---
+connectBtn.addEventListener('click', connectToChannel);
+rotateBtn.addEventListener('click', rotateImage);
+resetImageBtn.addEventListener('click', resetImage);
+undoBtn.addEventListener('click', undo);
+drawModeBtn.addEventListener('click', () => { isDrawing = !isDrawing; isCropping = false; drawModeBtn.classList.toggle('active', isDrawing); cropBtn.classList.remove('active'); canvas.style.cursor = isDrawing ? 'crosshair' : 'default'; });
+cropBtn.addEventListener('click', () => { isCropping = !isCropping; isDrawing = false; cropBtn.classList.toggle('active', isCropping); drawModeBtn.classList.remove('active'); canvas.style.cursor = isCropping ? 'crosshair' : 'default'; });
+downloadBtn.addEventListener('click', () => { renderCanvas(); setTimeout(() => { const link = document.createElement('a'); link.download = (textInput.value.trim().replace(/[^a-z0-9-]/gi, '_').toLowerCase() || `imagen_${Date.now()}`) + ".png"; link.href = canvas.toDataURL('image/png'); link.click(); }, 100); });
+[textInput, fontSizeInput, positionSelect, ...document.querySelectorAll('input[name="color"]')].forEach(el => el.addEventListener('input', () => { renderCanvas(); saveSettings(); }));
+document.querySelectorAll('.image-filter').forEach(el => el.addEventListener('input', () => { saveState(); renderCanvas(); }));
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    applyTheme(localStorage.getItem('theme') || 'light');
+    positionSelect.innerHTML = `<option value="top-left">Superior Izquierda</option><option value="top-right">Superior Derecha</option><option value="bottom-left">Inferior Izquierda</option><option value="bottom-right">Inferior Derecha</option>`;
+    loadSettings();
+    setUIState(false);
+    setupDrawingAndCropping();
+    channelIdInput.value = localStorage.getItem('lastChannelId') || '';
+});
+</script>
+</body>
+</html>

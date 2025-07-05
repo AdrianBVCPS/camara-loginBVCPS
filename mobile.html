@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>CÁMARA REMOTA</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#121212">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        :root { /* Dark Theme */
+            --primary-color: #E4002B; --secondary-color: #6C757D; --background-color: #121212;
+            --surface-color: #1E1E1E; --input-border-color: #555555; --text-color: #EAEAEA;
+        }
+        .light { /* Light Theme */
+            --secondary-color: #424242; --background-color: #F8F9FA; --surface-color: #FFFFFF;
+            --input-border-color: #CED4DA; --text-color: #212529;
+        }
+        body { font-family: 'Spline Sans', sans-serif; background-color: var(--background-color); color: var(--text-color); -webkit-tap-highlight-color: transparent; }
+        .spinner { border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; width: 1.2em; height: 1.2em; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #qrScannerContainer { background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
+        .toast-notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); z-index: 5001; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .toast-notification.show { bottom: 20px; }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="flex flex-col h-screen p-4 space-y-4">
+        <header class="flex items-center justify-between">
+            <h1 class="text-xl font-bold text-center flex-grow"><span class="text-[var(--primary-color)]">CÁMARA</span> REMOTA</h1>
+            <button id="themeToggle" class="p-2 rounded-full focus:outline-none focus:ring-2 ring-offset-2 ring-offset-[var(--background-color)] focus:ring-[var(--primary-color)]"></button>
+        </header>
+        
+        <div class="p-4 rounded-lg bg-[var(--surface-color)] border border-[var(--input-border-color)]">
+            <div class="grid grid-cols-[1fr_auto_auto] gap-2">
+                <input type="number" id="channelId" placeholder="Código de 4 dígitos" class="w-full rounded-lg bg-transparent border border-[var(--input-border-color)] h-12 p-2">
+                <button id="qrScanBtn" class="h-12 w-14 rounded-lg bg-[var(--secondary-color)] text-white"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 mx-auto"><path d="M1.5 6.75a.75.75 0 01.75-.75h.75a.75.75 0 010 1.5H3a.75.75 0 01-.75-.75zM3 17.25a.75.75 0 00.75.75H4.5a.75.75 0 000-1.5H3.75a.75.75 0 00-.75.75zM17.25 18a.75.75 0 00-.75-.75h-.75a.75.75 0 000 1.5H16.5a.75.75 0 00.75-.75zM18 6.75a.75.75 0 00-.75-.75h-.75a.75.75 0 000 1.5H16.5a.75.75 0 00.75-.75zM9.75 6a.75.75 0 000 1.5h.75a.75.75 0 000-1.5h-.75zM9 9.75A.75.75 0 019.75 9h.75a.75.75 0 010 1.5h-.75A.75.75 0 019 9.75zM9.75 12.75a.75.75 0 000 1.5H10.5a.75.75 0 000-1.5h-.75zM9 15.75a.75.75 0 01.75-.75h.75a.75.75 0 010 1.5h-.75a.75.75 0 01-.75-.75zM6.75 9.75a.75.75 0 000 1.5h.75a.75.75 0 000-1.5h-.75zM6 12.75a.75.75 0 01.75-.75h.75a.75.75 0 010 1.5h-.75A.75.75 0 016 12.75zM6.75 15.75a.75.75 0 000 1.5h.75a.75.75 0 000-1.5h-.75zM12.75 6a.75.75 0 000 1.5h.75a.75.75 0 000-1.5h-.75zM12 9.75a.75.75 0 01.75-.75h.75a.75.75 0 010 1.5h-.75A.75.75 0 0112 9.75zM12.75 12.75a.75.75 0 000 1.5h.75a.75.75 0 000-1.5h-.75zM12 15.75a.75.75 0 01.75-.75h.75a.75.75 0 010 1.5h-.75a.75.75 0 01-.75-.75zM15 9.75a.75.75 0 01.75-.75h.75a.75.75 0 010 1.5h-.75A.75.75 0 0115 9.75zM15.75 12.75a.75.75 0 000 1.5h.75a.75.75 0 000-1.5h-.75zM15 15.75a.75.75 0 01.75-.75h.75a.75.75 0 010 1.5h-.75a.75.75 0 01-.75-.75z"/><path fill-rule="evenodd" d="M2.25 4.5A2.25 2.25 0 014.5 2.25h15A2.25 2.25 0 0121.75 4.5v15a2.25 2.25 0 01-2.25 2.25h-15A2.25 2.25 0 012.25 19.5v-15zm2.25-1.5a.75.75 0 00-.75.75v15c0 .414.336.75.75.75h15a.75.75 0 00.75-.75v-15a.75.75 0 00-.75-.75h-15z" clip-rule="evenodd" /></svg></button>
+                <button id="connectBtn" class="relative h-12 px-4 rounded-lg bg-[var(--primary-color)] text-white font-bold">Conectar</button>
+            </div>
+            <div id="status" class="text-center text-sm font-semibold mt-3 text-gray-400">Desconectado</div>
+        </div>
+        
+        <div id="captureArea" class="hidden flex-1 flex-col items-center justify-center space-y-4">
+            <img id="preview" class="w-48 h-48 object-cover rounded-lg border-2 border-[var(--input-border-color)]">
+            <button id="sendBtn" class="w-full h-12 bg-[var(--primary-color)] text-white font-bold rounded-lg relative">Enviar Imagen</button>
+            <button id="discardBtn" class="w-full h-12 bg-[var(--secondary-color)] text-white font-bold rounded-lg">Descartar</button>
+        </div>
+        <label for="fileInput" id="captureLabel" class="hidden h-24 bg-[var(--surface-color)] border-2 border-dashed border-[var(--input-border-color)] rounded-lg flex items-center justify-center text-gray-400">Toca para capturar...</label>
+        <input type="file" id="fileInput" accept="image/*" capture="environment" class="hidden">
+    </div>
+
+    <div id="qrScannerContainer" class="fixed inset-0 items-center justify-center hidden z-50">
+        <div id="qr-reader" class="relative w-[90%] max-w-[500px] bg-[var(--surface-color)] p-4 rounded-lg shadow-lg">
+            <button id="closeQrScanner" class="absolute -top-3 -right-3 bg-white rounded-full w-8 h-8 flex items-center justify-center text-red-500 text-2xl font-bold">&times;</button>
+        </div>
+    </div>
+    <div id="toast" class="toast-notification bg-gray-800 text-white py-3 px-6 rounded-full shadow-lg"></div>
+
+<script>
+const firebaseConfig = { apiKey: "AIzaSyAbahVsQxI_HOz_yPtDlp4hXSdZO0dvRl4", authDomain: "camara-app-lugo.firebaseapp.com", databaseURL: "https://camara-app-lugo-default-rtdb.europe-west1.firebasedatabase.app", projectId: "camara-app-lugo", storageBucket: "camara-app-lugo.appspot.com", messagingSenderId: "437448426207", appId: "1:437448426207:web:a9dbecc8cbdb77d0c4df6a" };
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+const get = id => document.getElementById(id);
+
+const channelIdInput = get('channelId'), connectBtn = get('connectBtn'), statusDiv = get('status');
+const fileInput = get('fileInput'), captureArea = get('captureArea'), captureLabel = get('captureLabel');
+const preview = get('preview'), sendBtn = get('sendBtn'), discardBtn = get('discardBtn');
+const qrScanBtn = get('qrScanBtn'), qrScannerContainer = get('qrScannerContainer'), closeQrScanner = get('closeQrScanner');
+const themeToggle = get('themeToggle');
+
+let currentImage = null, currentChannelRef = null, toastTimeout;
+
+const sunIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.106a.75.75 0 010 1.06l-1.591 1.59a.75.75 0 11-1.06-1.06l1.59-1.591a.75.75 0 011.06 0zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.894 17.894a.75.75 0 011.06 0l1.59 1.591a.75.75 0 11-1.06 1.06l-1.591-1.59a.75.75 0 010-1.06zM12 21a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V21.75A.75.75 0 0112 21zM5.106 17.894a.75.75 0 010-1.06l1.591-1.59a.75.75 0 111.06 1.06l-1.59 1.591a.75.75 0 01-1.06 0zM3 12a.75.75 0 01.75-.75h2.25a.75.75 0 010 1.5H3.75A.75.75 0 013 12zM6.106 6.106a.75.75 0 011.06 0l1.591 1.59a.75.75 0 111.06-1.06l-1.59-1.591a.75.75 0 010-1.06z" /></svg>`;
+const moonIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path fill-rule="evenodd" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 004.472-.69a.75.75 0 01.82.162l.805.806a.75.75 0 01-.162.82a10.488 10.488 0 01-5.05 3.402A10.488 10.488 0 019.5 21a10.5 10.5 0 01-10.236-9.273A10.488 10.488 0 015.05 1.936a.75.75 0 01.82-.162l.806.805a.75.75 0 01.162.82zM10.25 11.25a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75h-.008a.75.75 0 01-.75-.75v-.008zM12.25 7.5a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75h-.008a.75.75 0 01-.75-.75V7.5z" clip-rule="evenodd" /></svg>`;
+function applyTheme(theme) { document.body.classList.toggle('light', theme === 'light'); themeToggle.innerHTML = theme === 'light' ? moonIcon : sunIcon; }
+themeToggle.addEventListener('click', () => { vibrate(); const newTheme = document.body.classList.contains('light') ? 'dark' : 'light'; localStorage.setItem('mobileTheme', newTheme); applyTheme(newTheme); });
+
+function vibrate(duration = 50) { if (navigator.vibrate) navigator.vibrate(duration); }
+function showToast(message) { const toast = get('toast'); toast.textContent = message; toast.classList.add('show'); clearTimeout(toastTimeout); toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, 3000); }
+function setButtonLoading(button, isLoading, text) { button.disabled = isLoading; if (isLoading) { button.innerHTML = `<div class="spinner mx-auto"></div>`; } else { button.innerHTML = text; } }
+function setUIState(isConnected) { channelIdInput.disabled = isConnected; qrScanBtn.disabled = isConnected; connectBtn.innerHTML = isConnected ? 'Desconectar' : 'Conectar'; statusDiv.textContent = isConnected ? `Conectado a Sala ${channelIdInput.value}` : 'Desconectado'; statusDiv.style.color = isConnected ? '#198754' : '#6C757D'; captureLabel.style.display = isConnected ? 'flex' : 'none'; }
+
+function connectToChannel() {
+    vibrate();
+    if (currentChannelRef) { currentChannelRef.off(); currentChannelRef = null; setUIState(false); showToast('Desconectado'); return; }
+    const channelId = channelIdInput.value;
+    if (!channelId || channelId.length !== 4) { showToast("Introduce un código válido"); return; }
+    setButtonLoading(connectBtn, true, 'Conectar');
+    currentChannelRef = database.ref('channels/' + channelId);
+    currentChannelRef.get().then(snapshot => {
+        if (snapshot.exists()) {
+            setButtonLoading(connectBtn, false, 'Desconectar'); showToast(`Conectado a la sala ${channelId}`);
+            localStorage.setItem('mobileChannelId', channelId); setUIState(true);
+        } else {
+            setButtonLoading(connectBtn, false, 'Conectar'); showToast("Error: La sala no existe."); currentChannelRef = null;
+        }
+    }).catch(error => { setButtonLoading(connectBtn, false, 'Conectar'); showToast("Error de conexión."); currentChannelRef = null; });
+}
+function sendImage() {
+    if (!currentChannelRef || !currentImage) return;
+    vibrate(); setButtonLoading(sendBtn, true, 'Enviar Imagen');
+    const payload = { imageData: currentImage, timestamp: Date.now() };
+    currentChannelRef.set(payload)
+        .then(() => { showToast('Imagen enviada con éxito'); discardImage(); })
+        .catch(error => showToast('Error al enviar: ' + error.message))
+        .finally(() => setButtonLoading(sendBtn, false, 'Enviar Imagen'));
+}
+function discardImage() { currentImage = null; captureArea.style.display = 'none'; captureLabel.style.display = 'flex'; fileInput.value = ''; }
+
+connectBtn.addEventListener('click', connectToChannel);
+fileInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (file) {
+        vibrate();
+        const reader = new FileReader();
+        reader.onload = e => { currentImage = e.target.result; preview.src = currentImage; captureLabel.style.display = 'none'; captureArea.style.display = 'flex'; };
+        reader.readAsDataURL(file);
+    }
+});
+sendBtn.addEventListener('click', sendImage);
+discardBtn.addEventListener('click', discardImage);
+
+let html5QrcodeScanner;
+qrScanBtn.addEventListener('click', () => {
+    vibrate(); qrScannerContainer.style.display = 'flex';
+    if (!html5QrcodeScanner) { html5QrcodeScanner = new Html5Qrcode("qr-reader", { formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ] }); }
+    html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } },
+        (decodedText) => {
+            if (/^\d{4}$/.test(decodedText)) {
+                closeQrScanner.click(); channelIdInput.value = decodedText; showToast(`Código ${decodedText} escaneado`); connectToChannel();
+            }
+        }, (errorMessage) => {}
+    ).catch(err => { showToast("No se pudo iniciar la cámara."); closeQrScanner.click(); });
+});
+closeQrScanner.addEventListener('click', () => {
+    vibrate();
+    if (html5QrcodeScanner && html5QrcodeScanner.getState() === 2) { html5QrcodeScanner.stop().catch(err => {}); }
+    qrScannerContainer.style.display = 'none';
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    applyTheme(localStorage.getItem('mobileTheme') || 'dark');
+    channelIdInput.value = localStorage.getItem('mobileChannelId') || '';
+    setUIState(false);
+});
+</script>
+</body>
+</html>
