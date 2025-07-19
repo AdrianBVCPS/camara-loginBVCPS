@@ -52,13 +52,15 @@
             <button id="sendBtn" class="w-full h-12 bg-[var(--primary-color)] text-white font-bold rounded-lg relative">Enviar Imagen</button>
             <button id="discardBtn" class="w-full h-12 bg-[var(--secondary-color)] text-white font-bold rounded-lg">Descartar</button>
         </div>
-        <label for="fileInput" id="captureLabel" class="hidden h-24 bg-[var(--surface-color)] border-2 border-dashed border-[var(--input-border-color)] rounded-lg flex items-center justify-center text-gray-400">Toca para capturar...</label>
+        <label for="fileInput" id="captureLabel" class="hidden h-24 bg-[var(--surface-color)] border-2 border-dashed border-[var(--input-border-color)] rounded-lg flex items-center justify-center text-gray-400">
+            Toca para capturar...
+        </label>
         <input type="file" id="fileInput" accept="image/*" capture="environment" class="hidden">
     </div>
 
     <div id="qrScannerContainer" class="fixed inset-0 items-center justify-center hidden z-50">
         <div id="qr-reader" class="relative w-[90%] max-w-[500px] bg-[var(--surface-color)] p-4 rounded-lg shadow-lg">
-            <button id="closeQrScanner" class="absolute -top-3 -right-3 bg-white rounded-full w-8 h-8 flex items-center justify-center text-red-500 text-2xl font-bold">&times;</button>
+            <button id="closeQrScanner" class="absolute -top-3 -right-3 bg-white rounded-full w-8 h-8 flex items-center justify-center text-red-500 text-2xl font-bold">×</button>
         </div>
     </div>
     <div id="toast" class="toast-notification bg-gray-800 text-white py-3 px-6 rounded-full shadow-lg"></div>
@@ -81,32 +83,66 @@ const sunIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fil
 const moonIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path fill-rule="evenodd" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 004.472-.69a.75.75 0 01.82.162l.805.806a.75.75 0 01-.162.82a10.488 10.488 0 01-5.05 3.402A10.488 10.488 0 019.5 21a10.5 10.5 0 01-10.236-9.273A10.488 10.488 0 015.05 1.936a.75.75 0 01.82-.162l.806.805a.75.75 0 01.162.82zM10.25 11.25a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75h-.008a.75.75 0 01-.75-.75v-.008zM12.25 7.5a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75h-.008a.75.75 0 01-.75-.75V7.5z" clip-rule="evenodd" /></svg>`;
 function applyTheme(theme) { document.body.classList.toggle('light', theme === 'light'); themeToggle.innerHTML = theme === 'light' ? moonIcon : sunIcon; }
 themeToggle.addEventListener('click', () => { vibrate(); const newTheme = document.body.classList.contains('light') ? 'dark' : 'light'; localStorage.setItem('mobileTheme', newTheme); applyTheme(newTheme); });
-
 function vibrate(duration = 50) { if (navigator.vibrate) navigator.vibrate(duration); }
 function showToast(message) { const toast = get('toast'); toast.textContent = message; toast.classList.add('show'); clearTimeout(toastTimeout); toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, 3000); }
 function setButtonLoading(button, isLoading, text) { button.disabled = isLoading; if (isLoading) { button.innerHTML = `<div class="spinner mx-auto"></div>`; } else { button.innerHTML = text; } }
 function setUIState(isConnected) { channelIdInput.disabled = isConnected; qrScanBtn.disabled = isConnected; connectBtn.innerHTML = isConnected ? 'Desconectar' : 'Conectar'; statusDiv.textContent = isConnected ? `Conectado a Sala ${channelIdInput.value}` : 'Desconectado'; statusDiv.style.color = isConnected ? '#198754' : '#6C757D'; captureLabel.style.display = isConnected ? 'flex' : 'none'; }
 
+// *** LOGICA DE CONEXION CORREGIDA PARA EL MÓVIL ***
 function connectToChannel() {
     vibrate();
-    if (currentChannelRef) { currentChannelRef.off(); currentChannelRef = null; setUIState(false); showToast('Desconectado'); return; }
+    if (currentChannelRef) {
+        currentChannelRef.off();
+        currentChannelRef = null;
+        setUIState(false);
+        showToast('Desconectado');
+        return;
+    }
     const channelId = channelIdInput.value;
-    if (!channelId || channelId.length !== 4) { showToast("Introduce un código válido"); return; }
+    if (!channelId || channelId.length !== 4) {
+        showToast("Introduce un código válido de 4 dígitos");
+        return;
+    }
     setButtonLoading(connectBtn, true, 'Conectar');
     currentChannelRef = database.ref('channels/' + channelId);
+
+    // Comprobamos si la sala existe
     currentChannelRef.get().then(snapshot => {
         if (snapshot.exists()) {
-            setButtonLoading(connectBtn, false, 'Desconectar'); showToast(`Conectado a la sala ${channelId}`);
-            localStorage.setItem('mobileChannelId', channelId); setUIState(true);
+            // La sala ya existe, nos conectamos directamente.
+            setButtonLoading(connectBtn, false, 'Desconectar');
+            showToast(`Conectado a la sala ${channelId}`);
+            localStorage.setItem('mobileChannelId', channelId);
+            setUIState(true);
         } else {
-            setButtonLoading(connectBtn, false, 'Conectar'); showToast("Error: La sala no existe."); currentChannelRef = null;
+            // La sala NO existe, así que la CREAMOS con datos iniciales.
+            const initialData = {
+                imageData: "placeholder",
+                textData: "",
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            };
+            currentChannelRef.set(initialData).then(() => {
+                setButtonLoading(connectBtn, false, 'Desconectar');
+                showToast(`Sala ${channelId} creada y conectada`);
+                localStorage.setItem('mobileChannelId', channelId);
+                setUIState(true);
+            }).catch(error => {
+                setButtonLoading(connectBtn, false, 'Conectar');
+                showToast("Error al crear la sala.");
+                currentChannelRef = null;
+            });
         }
-    }).catch(error => { setButtonLoading(connectBtn, false, 'Conectar'); showToast("Error de conexión."); currentChannelRef = null; });
+    }).catch(error => {
+        setButtonLoading(connectBtn, false, 'Conectar');
+        showToast("Error de conexión con la base de datos.");
+        currentChannelRef = null;
+    });
 }
+
 function sendImage() {
     if (!currentChannelRef || !currentImage) return;
     vibrate(); setButtonLoading(sendBtn, true, 'Enviar Imagen');
-    const payload = { imageData: currentImage, timestamp: Date.now() };
+    const payload = { imageData: currentImage, textData: "", timestamp: Date.now() }; // textData se envia vacío
     currentChannelRef.set(payload)
         .then(() => { showToast('Imagen enviada con éxito'); discardImage(); })
         .catch(error => showToast('Error al enviar: ' + error.message))
@@ -129,19 +165,30 @@ discardBtn.addEventListener('click', discardImage);
 
 let html5QrcodeScanner;
 qrScanBtn.addEventListener('click', () => {
-    vibrate(); qrScannerContainer.style.display = 'flex';
-    if (!html5QrcodeScanner) { html5QrcodeScanner = new Html5Qrcode("qr-reader", { formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ] }); }
-    html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } },
-        (decodedText) => {
-            if (/^\d{4}$/.test(decodedText)) {
-                closeQrScanner.click(); channelIdInput.value = decodedText; showToast(`Código ${decodedText} escaneado`); connectToChannel();
-            }
-        }, (errorMessage) => {}
-    ).catch(err => { showToast("No se pudo iniciar la cámara."); closeQrScanner.click(); });
+    vibrate();
+    qrScannerContainer.style.display = 'flex';
+    if (!html5QrcodeScanner) {
+        html5QrcodeScanner = new Html5Qrcode("qr-reader", { formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ] });
+    }
+    const onScanSuccess = (decodedText) => {
+        if (/^\d{4}$/.test(decodedText)) {
+            closeQrScanner.click();
+            channelIdInput.value = decodedText;
+            showToast(`Código ${decodedText} escaneado`);
+            connectToChannel();
+        }
+    };
+    html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess)
+    .catch(err => {
+        showToast("No se pudo iniciar la cámara.");
+        closeQrScanner.click();
+    });
 });
 closeQrScanner.addEventListener('click', () => {
     vibrate();
-    if (html5QrcodeScanner && html5QrcodeScanner.getState() === 2) { html5QrcodeScanner.stop().catch(err => {}); }
+    if (html5QrcodeScanner && html5QrcodeScanner.getState() === 2) { // 2 = SCANNING
+        html5QrcodeScanner.stop().catch(err => {});
+    }
     qrScannerContainer.style.display = 'none';
 });
 
