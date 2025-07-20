@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EDITOR DE CÁMARA MÁSTER- BUREAU VERITAS</title>
+    <title>EDITOR DE MUESTRAS - LABORATORIO (Master)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;700&display=swap" rel="stylesheet">
@@ -28,7 +28,7 @@
         .toast-notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); z-index: 5001; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .toast-notification.show { bottom: 20px; }
         .cropping #canvas { cursor: crosshair; }
-        #logo-preview { max-width: 100px; max-height: 40px; object-fit: contain; }
+        .logo-preview { max-width: 80px; max-height: 30px; object-fit: contain; }
     </style>
 </head>
 <body class="min-h-screen">
@@ -36,8 +36,8 @@
         <!-- HEADER -->
         <header class="flex items-center justify-between p-4 border-b border-[var(--input-border-color)] flex-shrink-0">
              <h1 class="text-[var(--text-color)] text-lg font-bold tracking-tight">
-                <span style="color: var(--primary-color);">EDITOR DE CÁMARA MÁSTER</span>
-                <span class="text-[var(--text-secondary-color)]">BUREAU VERITAS CPS LUGO</span>
+                <span style="color: var(--primary-color);">EDITOR DE MUESTRAS</span>
+                <span class="text-[var(--text-secondary-color)]">LABORATORIO TEXTIL</span>
             </h1>
             <button id="themeToggle" class="p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" title="Cambiar tema"></button>
         </header>
@@ -49,16 +49,13 @@
                     <!-- Connection -->
                     <div class="p-4 rounded-lg bg-[var(--surface-color)] border border-[var(--input-border-color)]">
                         <label class="font-semibold mb-2 block">Conexión</label>
-                        <div class="flex items-center gap-2">
-                            <input type="number" id="channelId" placeholder="Código de 4 dígitos" class="w-full rounded-lg text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] border border-[var(--input-border-color)] bg-transparent h-10 p-2">
-                            <button id="connectBtn" class="relative flex-shrink-0 h-10 px-4 rounded-lg bg-[var(--primary-color)] text-white font-bold disabled:bg-gray-400">Conectar</button>
-                        </div>
+                        <div class="flex items-center gap-2"><input type="number" id="channelId" placeholder="Código de 4 dígitos" class="w-full rounded-lg text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] border border-[var(--input-border-color)] bg-transparent h-10 p-2"><button id="connectBtn" class="relative flex-shrink-0 h-10 px-4 rounded-lg bg-[var(--primary-color)] text-white font-bold disabled:bg-gray-400">Conectar</button></div>
                         <div id="qrContainer" class="mt-4 text-center hidden"><canvas id="qrCanvas"></canvas><p class="text-xs text-[var(--text-secondary-color)] mt-2">Escanea este código desde el móvil</p></div>
                         <div id="status" class="text-center text-sm font-semibold mt-3">Desconectado</div>
                     </div>
 
                     <!-- Image Tools -->
-                     <div class="p-4 rounded-lg bg-[var(--surface-color)] border border-[var(--input-border-color)]">
+                    <div class="p-4 rounded-lg bg-[var(--surface-color)] border border-[var(--input-border-color)]">
                         <label class="font-semibold mb-2 block">Herramientas</label>
                          <div class="grid grid-cols-5 gap-2 text-center">
                             <button id="undoBtn" title="Deshacer" class="tool-btn p-2 rounded-lg text-[var(--secondary-color)] bg-gray-100 dark:bg-gray-700 disabled:opacity-50" disabled><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8a5 5 0 0 1 0 10H9" /></svg></button>
@@ -67,10 +64,10 @@
                             <button id="drawModeBtn" title="Dibujar" class="tool-btn p-2 rounded-lg text-[var(--secondary-color)] bg-gray-100 dark:bg-gray-700 disabled:opacity-50" disabled><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
                             <button id="resetImageBtn" title="Restaurar Imagen Original" class="tool-btn p-2 rounded-lg text-[var(--secondary-color)] bg-gray-100 dark:bg-gray-700 disabled:opacity-50" disabled><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M4 20h5v-5M20 4h-5v5" /></svg></button>
                          </div>
-                    </div>
+                   </div>
 
-                    <!-- Text Request -->
-                     <div class="p-4 rounded-lg bg-[var(--surface-color)] border border-[var(--input-border-color)]">
+                    <!-- Nº de Registro -->
+                    <div class="p-4 rounded-lg bg-[var(--surface-color)] border border-[var(--input-border-color)]">
                         <label class="font-semibold mb-2 block">Nº de Registro</label>
                         <div class="flex items-center gap-2">
                              <input type="text" id="prefixInput" value="24-" class="w-16 rounded-lg text-center text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] border border-[var(--input-border-color)] bg-transparent h-10 p-2" disabled>
@@ -78,44 +75,41 @@
                              <button id="incrementBtn" title="Incrementar número" class="flex-shrink-0 flex items-center justify-center rounded-lg h-10 w-10 bg-[var(--secondary-color)] text-white font-bold" disabled>+</button>
                         </div>
                         <div class="grid grid-cols-2 gap-4 mt-2">
-                             <div>
-                                <label for="fontSizeInput" class="text-xs font-semibold">Tamaño</label>
-                                <input type="range" id="fontSizeInput" min="12" max="500" value="150" class="w-full" disabled>
-                            </div>
-                            <div>
-                                <label class="text-xs font-semibold block">Color</label>
-                                <div class="flex gap-2 mt-1">
-                                    <input type="radio" name="color" data-color="white" class="appearance-none w-6 h-6 bg-white rounded-full cursor-pointer checked:ring-2 checked:ring-offset-2 checked:ring-[var(--primary-color)]" disabled>
-                                    <input type="radio" name="color" data-color="black" class="appearance-none w-6 h-6 bg-black rounded-full cursor-pointer checked:ring-2 checked:ring-offset-2 checked:ring-[var(--primary-color)]" disabled>
-                                    <input type="radio" name="color" data-color="#E4002B" class="appearance-none w-6 h-6 bg-[var(--primary-color)] rounded-full cursor-pointer checked:ring-2 checked:ring-offset-2 checked:ring-[var(--primary-color)]" disabled>
-                                </div>
-                            </div>
+                             <div><label for="fontSizeInput" class="text-xs font-semibold">Tamaño</label><input type="range" id="fontSizeInput" min="12" max="500" value="150" class="w-full" disabled></div>
+                             <div><label class="text-xs font-semibold block">Color</label><div class="flex gap-2 mt-1"><input type="radio" name="color" data-color="white" class="appearance-none w-6 h-6 bg-white rounded-full cursor-pointer checked:ring-2 checked:ring-offset-2 checked:ring-[var(--primary-color)]" disabled><input type="radio" name="color" data-color="black" class="appearance-none w-6 h-6 bg-black rounded-full cursor-pointer checked:ring-2 checked:ring-offset-2 checked:ring-[var(--primary-color)]" disabled><input type="radio" name="color" data-color="#E4002B" class="appearance-none w-6 h-6 bg-[var(--primary-color)] rounded-full cursor-pointer checked:ring-2 checked:ring-offset-2 checked:ring-[var(--primary-color)]" disabled></div></div>
                         </div>
-                        <div class="mt-2">
-                             <label for="positionSelect" class="text-xs font-semibold">Posición</label>
-                             <select id="positionSelect" class="w-full mt-1 rounded-lg text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] border border-[var(--input-border-color)] bg-transparent h-10 p-2" disabled></select>
-                        </div>
+                        <div class="mt-2"><label for="positionSelect" class="text-xs font-semibold">Posición</label><select id="positionSelect" class="w-full mt-1 rounded-lg text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] border border-[var(--input-border-color)] bg-transparent h-10 p-2" disabled></select></div>
                     </div>
-
+                    
                     <!-- Branding -->
-                     <div class="p-4 rounded-lg bg-[var(--surface-color)] border border-[var(--input-border-color)]">
+                    <div class="p-4 rounded-lg bg-[var(--surface-color)] border border-[var(--input-border-color)]">
                         <label class="font-semibold mb-2 block">Branding</label>
-                        <div class="flex items-center justify-between">
-                            <img id="logo-preview" src="" alt="Logo" class="hidden bg-gray-200 dark:bg-gray-700 p-1 rounded">
-                            <label for="logoUpload" class="h-10 px-4 rounded-lg bg-[var(--secondary-color)] text-white text-sm font-bold cursor-pointer inline-flex items-center">Subir Logo</label>
-                            <input type="file" id="logoUpload" class="hidden" accept="image/png, image/jpeg">
+                        <div class="grid grid-cols-3 gap-2 mb-2">
+                            <label for="logoUpload1" class="relative border-2 border-dashed border-[var(--input-border-color)] rounded-lg h-12 flex items-center justify-center cursor-pointer"><img id="logo-preview-1" class="logo-preview hidden"><span id="logo-text-1" class="text-xs text-[var(--text-secondary-color)]">Logo 1</span></label>
+                            <label for="logoUpload2" class="relative border-2 border-dashed border-[var(--input-border-color)] rounded-lg h-12 flex items-center justify-center cursor-pointer"><img id="logo-preview-2" class="logo-preview hidden"><span id="logo-text-2" class="text-xs text-[var(--text-secondary-color)]">Logo 2</span></label>
+                            <label for="logoUpload3" class="relative border-2 border-dashed border-[var(--input-border-color)] rounded-lg h-12 flex items-center justify-center cursor-pointer"><img id="logo-preview-3" class="logo-preview hidden"><span id="logo-text-3" class="text-xs text-[var(--text-secondary-color)]">Logo 3</span></label>
                         </div>
+                        <input type="file" id="logoUpload1" class="hidden" accept="image/png, image/jpeg" data-slot="1">
+                        <input type="file" id="logoUpload2" class="hidden" accept="image/png, image/jpeg" data-slot="2">
+                        <input type="file" id="logoUpload3" class="hidden" accept="image/png, image/jpeg" data-slot="3">
                         <div class="flex items-center mt-2">
-                            <input type="checkbox" id="addLogoToggle" class="h-4 w-4 rounded text-[var(--primary-color)] focus:ring-[var(--primary-color)]" disabled>
-                            <label for="addLogoToggle" class="ml-2 text-sm">Añadir logo a la imagen</label>
+                            <select id="logoSelect" class="flex-grow w-full rounded-lg text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] border border-[var(--input-border-color)] bg-transparent h-10 p-2 text-sm" disabled><option value="none">No usar logo</option></select>
                         </div>
                     </div>
-
-                    <!-- Actions -->
+                    
+                    <!-- Acciones -->
                     <div class="p-4 rounded-lg bg-[var(--surface-color)] border border-[var(--input-border-color)] space-y-2">
                          <label class="font-semibold mb-1 block">Acciones</label>
-                         <button id="downloadBtn" class="w-full h-10 bg-[var(--primary-color)] text-white font-bold text-sm rounded-lg disabled:bg-gray-400" disabled>Descargar Imagen</button>
-                         <button id="adminClearDbBtn" class="w-full h-10 bg-[var(--secondary-color)] text-white font-bold text-sm rounded-lg">Admin: Limpiar Base de Datos</button>
+                         <div class="flex items-center justify-between bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
+                            <label for="batchModeToggle" class="text-sm font-medium">Modo Ráfaga (Auto-Descarga)</label>
+                            <input type="checkbox" id="batchModeToggle" class="h-5 w-10 rounded-full appearance-none bg-gray-300 dark:bg-gray-600 checked:bg-[var(--primary-color)] transition duration-200" disabled>
+                         </div>
+                         <button id="downloadPngBtn" class="w-full h-10 bg-[var(--primary-color)] text-white font-bold text-sm rounded-lg disabled:bg-gray-400" disabled>Descargar PNG (Alta Calidad)</button>
+                         <div class="flex items-center gap-2">
+                             <button id="downloadJpgBtn" class="flex-grow w-full h-10 bg-[var(--secondary-color)] text-white font-bold text-sm rounded-lg disabled:bg-gray-400" disabled>Descargar JPG</button>
+                             <input type="range" id="jpgQuality" min="0.1" max="1" value="0.8" step="0.1" class="w-24" title="Calidad JPG" disabled>
+                         </div>
+                         <button id="adminClearDbBtn" class="w-full h-10 bg-gray-800 dark:bg-gray-600 text-white font-bold text-sm rounded-lg">Admin: Limpiar Base de Datos</button>
                     </div>
                 </div>
             </aside>
@@ -128,10 +122,7 @@
             </main>
         </main>
     </div>
-    <div id="toast" class="toast-notification bg-gray-800 text-white py-3 px-6 rounded-full shadow-lg">
-        <span id="toast-message"></span>
-    </div>
-
+    <div id="toast" class="toast-notification bg-gray-800 text-white py-3 px-6 rounded-full shadow-lg"><span id="toast-message"></span></div>
 <script>
 // --- SCRIPT PARA DESKTOP.HTML ---
 const firebaseConfig = { apiKey: "AIzaSyAbahVsQxI_HOz_yPtDlp4hXSdZO0dvRl4", authDomain: "camara-app-lugo.firebaseapp.com", databaseURL: "https://camara-app-lugo-default-rtdb.europe-west1.firebasedatabase.app", projectId: "camara-app-lugo", storageBucket: "camara-app-lugo.appspot.com", messagingSenderId: "437448426207", appId: "1:437448426207:web:a9dbecc8cbdb77d0c4df6a" };
@@ -144,17 +135,18 @@ const get = id => document.getElementById(id);
 const channelIdInput = get('channelId'), connectBtn = get('connectBtn'), statusDiv = get('status');
 const prefixInput = get('prefixInput'), requestNumberInput = get('requestNumberInput'), incrementBtn = get('incrementBtn');
 const fontSizeInput = get('fontSizeInput'), positionSelect = get('positionSelect');
-const downloadBtn = get('downloadBtn'), cropBtn = get('cropBtn'), rotateBtn = get('rotateBtn');
-const drawModeBtn = get('drawModeBtn'), resetImageBtn = get('resetImageBtn'), undoBtn = get('undoBtn');
+const downloadPngBtn = get('downloadPngBtn'), downloadJpgBtn = get('downloadJpgBtn'), jpgQuality = get('jpgQuality');
+const cropBtn = get('cropBtn'), rotateBtn = get('rotateBtn'), drawModeBtn = get('drawModeBtn'), resetImageBtn = get('resetImageBtn'), undoBtn = get('undoBtn');
 const canvas = get('canvas'), ctx = canvas.getContext('2d'), placeholderText = get('placeholderText');
 const themeToggle = get('themeToggle'), qrContainer = get('qrContainer');
+const logoSelect = get('logoSelect');
+const batchModeToggle = get('batchModeToggle');
 const adminClearDbBtn = get('adminClearDbBtn');
-const logoUpload = get('logoUpload'), logoPreview = get('logo-preview'), addLogoToggle = get('addLogoToggle');
 
 let currentImage = null, originalImage = null, currentChannelRef = null, lastReceivedTimestamp = 0;
 let isCropping = false, isDrawing = false;
 let cropStartX = 0, cropStartY = 0, cropEndX = 0, cropEndY = 0;
-let history = [], companyLogo = new Image();
+let history = [], companyLogos = [new Image(), new Image(), new Image()];
 let toastTimeout;
 
 // --- THEME & UI ---
@@ -178,7 +170,7 @@ function loadSettings() {
     }
 }
 function enableAllControls(enabled) {
-    [prefixInput, requestNumberInput, incrementBtn, fontSizeInput, positionSelect, downloadBtn, cropBtn, rotateBtn, drawModeBtn, resetImageBtn, addLogoToggle, ...document.querySelectorAll('.image-filter'), ...document.querySelectorAll('input[name="color"]')].forEach(el => el.disabled = !enabled);
+    [prefixInput, requestNumberInput, incrementBtn, fontSizeInput, positionSelect, downloadPngBtn, downloadJpgBtn, jpgQuality, cropBtn, rotateBtn, drawModeBtn, resetImageBtn, logoSelect, batchModeToggle, ...document.querySelectorAll('.image-filter'), ...document.querySelectorAll('input[name="color"]')].forEach(el => el.disabled = !enabled);
     undoBtn.disabled = history.length <= 1;
 }
 function saveState() { history.push(canvas.toDataURL()); if (history.length > 10) history.shift(); undoBtn.disabled = false; }
@@ -190,9 +182,7 @@ function undo() {
     undoBtn.disabled = history.length <= 1;
 }
 function connectToChannel() {
-    if (currentChannelRef) {
-        currentChannelRef.off(); currentChannelRef = null; setUIState(false); showToast('Desconectado de la sala.', 'info'); return;
-    }
+    if (currentChannelRef) { currentChannelRef.off(); currentChannelRef = null; setUIState(false); showToast('Desconectado de la sala.', 'info'); return; }
     let channelId = channelIdInput.value;
     if (!channelId || channelId.length !== 4) { channelId = Math.floor(1000 + Math.random() * 9000).toString(); channelIdInput.value = channelId; }
     setButtonLoading(connectBtn, true, 'Conectar');
@@ -201,7 +191,7 @@ function connectToChannel() {
     currentChannelRef.set(initialData).then(() => {
         currentChannelRef.on('value', (snapshot) => {
             const data = snapshot.val();
-            if (data && data.timestamp > lastReceivedTimestamp && data.imageData !== "placeholder") { lastReceivedTimestamp = data.timestamp; processNewImage(data.imageData); showToast("¡Nueva imagen recibida!", "success"); }
+            if (data && data.timestamp > lastReceivedTimestamp && data.imageData !== "placeholder") { lastReceivedTimestamp = data.timestamp; processNewImage(data.imageData); }
         });
         setButtonLoading(connectBtn, false, 'Conectar');
         showToast(`Conectado a la sala ${channelId}`, "success");
@@ -231,8 +221,7 @@ function renderCanvas() {
         const position = positionSelect.value;
         const selectedColor = document.querySelector('input[name="color"]:checked').dataset.color;
         const padding = Math.max(20, fontSize / 2);
-        
-        if (fullRequestText) {
+        if (fullRequestText.length > prefixInput.value.length) {
             ctx.font = `bold ${fontSize}px Arial`; ctx.fillStyle = selectedColor;
             ctx.strokeStyle = (selectedColor === 'white' || selectedColor === '#E4002B') ? 'black' : 'white';
             ctx.lineWidth = Math.max(2, fontSize / 12);
@@ -244,15 +233,18 @@ function renderCanvas() {
             else { x = canvas.width - textMetrics.width - padding; y = canvas.height - padding; }
             ctx.strokeText(fullRequestText, x, y); ctx.fillText(fullRequestText, x, y);
         }
-        if (addLogoToggle.checked && companyLogo.src) {
+        
+        const selectedLogoIndex = parseInt(logoSelect.value, 10);
+        if (!isNaN(selectedLogoIndex) && companyLogos[selectedLogoIndex] && companyLogos[selectedLogoIndex].src) {
+            const logo = companyLogos[selectedLogoIndex];
             const logoHeight = fontSize;
-            const logoWidth = (companyLogo.width / companyLogo.height) * logoHeight;
+            const logoWidth = (logo.width / logo.height) * logoHeight;
             let x, y;
             if (position === 'bottom-right') { x = padding; y = padding; }
             else if (position === 'bottom-left') { x = canvas.width - logoWidth - padding; y = padding; }
             else if (position === 'top-right') { x = padding; y = canvas.height - logoHeight - padding; }
             else { x = canvas.width - logoWidth - padding; y = canvas.height - logoHeight - padding; }
-            ctx.drawImage(companyLogo, x, y, logoWidth, logoHeight);
+            ctx.drawImage(logo, x, y, logoWidth, logoHeight);
         }
     };
     img.src = currentImage;
@@ -264,6 +256,12 @@ function processNewImage(imageData) {
     document.querySelectorAll('.image-filter').forEach(f => f.value = 1);
     enableAllControls(true);
     renderCanvas();
+    if(batchModeToggle.checked) {
+        setTimeout(() => {
+            downloadPngBtn.click();
+            incrementBtn.click();
+        }, 500);
+    }
 }
 function resetImage() { currentImage = originalImage; isDrawing = false; isCropping = false; drawModeBtn.classList.remove('active'); cropBtn.classList.remove('active'); canvas.style.cursor = 'default'; saveState(); renderCanvas(); }
 function rotateImage() { if (!currentImage) return; saveState(); const img = new Image(); img.onload = () => { const tempCanvas = document.createElement('canvas'); const tempCtx = tempCanvas.getContext('2d'); tempCanvas.width = img.height; tempCanvas.height = img.width; tempCtx.translate(tempCanvas.width / 2, tempCanvas.height / 2); tempCtx.rotate(90 * Math.PI / 180); tempCtx.drawImage(img, -img.width / 2, -img.height / 2); currentImage = tempCanvas.toDataURL('image/jpeg', 0.95); renderCanvas(); }; img.src = currentImage; }
@@ -293,6 +291,49 @@ function applyCrop() {
     img.onload = () => { tempCtx.drawImage(img, x, y, width, height, 0, 0, width, height); currentImage = tempCanvas.toDataURL('image/jpeg'); renderCanvas(); };
     img.src = canvas.toDataURL();
 }
+function downloadImage(format = 'png', quality = 1.0) {
+    renderCanvas(); 
+    setTimeout(() => { 
+        const link = document.createElement('a'); 
+        const requestNum = `${prefixInput.value}${requestNumberInput.value}`;
+        link.download = `${requestNum}.${format}`;
+        link.href = canvas.toDataURL(`image/${format}`, quality);
+        link.click(); 
+    }, 100);
+}
+[...document.querySelectorAll('input[type="file"][data-slot]')].forEach(input => {
+    input.addEventListener('change', e => {
+        const slot = parseInt(e.target.dataset.slot, 10);
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const logoDataUrl = event.target.result;
+                localStorage.setItem(`companyLogo${slot}`, logoDataUrl);
+                companyLogos[slot - 1].src = logoDataUrl;
+                get(`logo-preview-${slot}`).src = logoDataUrl;
+                get(`logo-preview-${slot}`).classList.remove('hidden');
+                get(`logo-text-${slot}`).classList.add('hidden');
+                updateLogoSelector();
+                renderCanvas();
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+});
+function updateLogoSelector() {
+    const currentSelection = logoSelect.value;
+    logoSelect.innerHTML = '<option value="none">No usar logo</option>';
+    companyLogos.forEach((logo, index) => {
+        if (logo.src) {
+            const option = document.createElement('option');
+            option.value = index;
+            option.textContent = `Logo ${index + 1}`;
+            logoSelect.appendChild(option);
+        }
+    });
+    logoSelect.value = currentSelection;
+}
 function adminClearDatabase() {
     const pass = prompt("Introduce la contraseña de administrador para limpiar la base de datos:");
     if (pass === ADMIN_PASSWORD) {
@@ -306,22 +347,31 @@ function adminClearDatabase() {
 }
 adminClearDbBtn.addEventListener('click', adminClearDatabase);
 connectBtn.addEventListener('click', connectToChannel);
-rotateBtn.addEventListener('click', rotateBtn);
+rotateBtn.addEventListener('click', rotateImage);
 resetImageBtn.addEventListener('click', resetImage);
 undoBtn.addEventListener('click', undo);
 drawModeBtn.addEventListener('click', () => { isDrawing = !isDrawing; isCropping = false; drawModeBtn.classList.toggle('active', isDrawing); cropBtn.classList.remove('active'); canvas.style.cursor = isDrawing ? 'crosshair' : 'default'; });
 cropBtn.addEventListener('click', () => { isCropping = !isCropping; isDrawing = false; cropBtn.classList.toggle('active', isCropping); drawModeBtn.classList.remove('active'); canvas.style.cursor = isCropping ? 'crosshair' : 'default'; });
-downloadBtn.addEventListener('click', () => { renderCanvas(); setTimeout(() => { const link = document.createElement('a'); const fullRequestText = `${prefixInput.value}${requestNumberInput.value}`; link.download = (fullRequestText.trim().replace(/[^a-z0-9-]/gi, '_').toLowerCase() || `imagen_${Date.now()}`) + ".png"; link.href = canvas.toDataURL('image/png'); link.click(); }, 100); });
-[prefixInput, requestNumberInput, fontSizeInput, positionSelect, addLogoToggle, ...document.querySelectorAll('input[name="color"]')].forEach(el => el.addEventListener('input', () => { renderCanvas(); saveSettings(); }));
+downloadPngBtn.addEventListener('click', () => downloadImage('png'));
+downloadJpgBtn.addEventListener('click', () => downloadImage('jpeg', parseFloat(jpgQuality.value)));
+[prefixInput, requestNumberInput, fontSizeInput, positionSelect, logoSelect, ...document.querySelectorAll('input[name="color"]')].forEach(el => el.addEventListener('input', () => { renderCanvas(); saveSettings(); }));
 document.querySelectorAll('.image-filter').forEach(el => el.addEventListener('input', () => { renderCanvas(); }));
 incrementBtn.addEventListener('click', () => { let numStr = requestNumberInput.value; let num = parseInt(numStr, 10); if (isNaN(num)) num = 0; num++; requestNumberInput.value = num.toString().padStart(numStr.length, '0'); renderCanvas(); saveSettings(); });
-logoUpload.addEventListener('change', (e) => { const file = e.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = (event) => { localStorage.setItem('companyLogo', event.target.result); companyLogo.src = event.target.result; logoPreview.src = event.target.result; logoPreview.classList.remove('hidden'); renderCanvas(); }; reader.readAsDataURL(file); } });
+
 document.addEventListener('DOMContentLoaded', () => {
     applyTheme(localStorage.getItem('theme') || 'light');
     positionSelect.innerHTML = `<option value="top-left">Superior Izquierda</option><option value="top-right">Superior Derecha</option><option value="bottom-left">Inferior Izquierda</option><option value="bottom-right" selected>Inferior Derecha</option>`;
     loadSettings();
-    const savedLogo = localStorage.getItem('companyLogo');
-    if (savedLogo) { companyLogo.src = savedLogo; logoPreview.src = savedLogo; logoPreview.classList.remove('hidden'); }
+    for (let i = 1; i <= 3; i++) {
+        const savedLogo = localStorage.getItem(`companyLogo${i}`);
+        if (savedLogo) {
+            companyLogos[i - 1].src = savedLogo;
+            get(`logo-preview-${i}`).src = savedLogo;
+            get(`logo-preview-${i}`).classList.remove('hidden');
+            get(`logo-text-${i}`).classList.add('hidden');
+        }
+    }
+    updateLogoSelector();
     setUIState(false); enableAllControls(false); setupDrawingAndCropping();
     channelIdInput.value = localStorage.getItem('lastChannelId') || '';
 });
