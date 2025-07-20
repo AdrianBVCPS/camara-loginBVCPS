@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EDITOR DE CÁMARA - BUREAU VERITAS</title>
-    <!-- ... (el resto del <head> es igual, no es necesario cambiarlo) ... -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;700&display=swap" rel="stylesheet">
@@ -29,6 +28,7 @@
         .toast-notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); z-index: 5001; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .toast-notification.show { bottom: 20px; }
         .cropping #canvas { cursor: crosshair; }
+        #logo-preview { max-width: 100px; max-height: 40px; object-fit: contain; }
     </style>
 </head>
 <body class="min-h-screen">
@@ -41,11 +41,12 @@
             </h1>
             <button id="themeToggle" class="p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" title="Cambiar tema"></button>
         </header>
+
         <main class="flex flex-1 overflow-hidden">
             <!-- Controls Pane -->
             <aside class="w-96 p-4 overflow-y-auto border-r border-[var(--input-border-color)] flex-shrink-0">
                 <div class="space-y-4">
-                    <!-- ... (Sección de Conexión, Herramientas, Ajustes y Request sin cambios) ... -->
+                    <!-- Connection -->
                     <div class="p-4 rounded-lg bg-[var(--surface-color)] border border-[var(--input-border-color)]">
                         <label class="font-semibold mb-2 block">Conexión</label>
                         <div class="flex items-center gap-2">
@@ -55,27 +56,27 @@
                         <div id="qrContainer" class="mt-4 text-center hidden"><canvas id="qrCanvas"></canvas><p class="text-xs text-[var(--text-secondary-color)] mt-2">Escanea este código desde el móvil</p></div>
                         <div id="status" class="text-center text-sm font-semibold mt-3">Desconectado</div>
                     </div>
+
+                    <!-- Image Tools -->
                      <div class="p-4 rounded-lg bg-[var(--surface-color)] border border-[var(--input-border-color)]">
                         <label class="font-semibold mb-2 block">Herramientas</label>
                          <div class="grid grid-cols-5 gap-2 text-center">
-                            <button id="undoBtn" title="Deshacer" class="tool-btn p-2 rounded-lg text-[var(--secondary-color)] bg-gray-100 dark:bg-gray-700 disabled:opacity-50" disabled><svg xmlns="http://www.w.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8a5 5 0 0 1 0 10H9" /></svg></button>
+                            <button id="undoBtn" title="Deshacer" class="tool-btn p-2 rounded-lg text-[var(--secondary-color)] bg-gray-100 dark:bg-gray-700 disabled:opacity-50" disabled><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8a5 5 0 0 1 0 10H9" /></svg></button>
                             <button id="rotateBtn" title="Rotar" class="tool-btn p-2 rounded-lg text-[var(--secondary-color)] bg-gray-100 dark:bg-gray-700 disabled:opacity-50" disabled><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M4 20h5v-5M20 4h-5v5" /></svg></button>
-                            <button id="cropBtn" title="Recortar" class="tool-btn p-2 rounded-lg text-[var(--secondary-color)] bg-gray-100 dark:bg-gray-700 disabled:opacity-50" disabled><svg xmlns="http://www.w.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19M4.879 4.879L9.75 9.75m-4.871 0L19 4.879M4.879 19L19 9.75" /></svg></button>
+                            <button id="cropBtn" title="Recortar" class="tool-btn p-2 rounded-lg text-[var(--secondary-color)] bg-gray-100 dark:bg-gray-700 disabled:opacity-50" disabled><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19M4.879 4.879L9.75 9.75m-4.871 0L19 4.879M4.879 19L19 9.75" /></svg></button>
                             <button id="drawModeBtn" title="Dibujar" class="tool-btn p-2 rounded-lg text-[var(--secondary-color)] bg-gray-100 dark:bg-gray-700 disabled:opacity-50" disabled><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
                             <button id="resetImageBtn" title="Restaurar Imagen Original" class="tool-btn p-2 rounded-lg text-[var(--secondary-color)] bg-gray-100 dark:bg-gray-700 disabled:opacity-50" disabled><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M4 20h5v-5M20 4h-5v5" /></svg></button>
                          </div>
                     </div>
-                    <div class="p-4 rounded-lg bg-[var(--surface-color)] border border-[var(--input-border-color)]">
-                        <label class="font-semibold mb-2 block">Ajustes de Imagen</label>
-                        <div class="space-y-3">
-                             <div class="slider-container"><label class="text-xs font-semibold">Brillo</label><input type="range" class="image-filter" data-filter="brightness" min="0" max="2" value="1" step="0.05" disabled></div>
-                             <div class="slider-container"><label class="text-xs font-semibold">Contraste</label><input type="range" class="image-filter" data-filter="contrast" min="0" max="2" value="1" step="0.05" disabled></div>
-                             <div class="slider-container"><label class="text-xs font-semibold">Saturación</label><input type="range" class="image-filter" data-filter="saturate" min="0" max="2" value="1" step="0.05" disabled></div>
-                        </div>
-                    </div>
+
+                    <!-- Text Request -->
                      <div class="p-4 rounded-lg bg-[var(--surface-color)] border border-[var(--input-border-color)]">
-                        <label class="font-semibold mb-2 block">Request</label>
-                         <input type="text" id="textInput" class="w-full rounded-lg text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] border border-[var(--input-border-color)] bg-transparent h-10 p-2" disabled>
+                        <label class="font-semibold mb-2 block">Nº de Registro</label>
+                        <div class="flex items-center gap-2">
+                             <input type="text" id="prefixInput" value="24-" class="w-16 rounded-lg text-center text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] border border-[var(--input-border-color)] bg-transparent h-10 p-2" disabled>
+                             <input type="text" id="requestNumberInput" placeholder="00001" class="flex-grow w-full min-w-0 rounded-lg text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] border border-[var(--input-border-color)] bg-transparent h-10 p-2" disabled>
+                             <button id="incrementBtn" title="Incrementar número" class="flex-shrink-0 flex items-center justify-center rounded-lg h-10 w-10 bg-[var(--secondary-color)] text-white font-bold" disabled>+</button>
+                        </div>
                         <div class="grid grid-cols-2 gap-4 mt-2">
                              <div>
                                 <label for="fontSizeInput" class="text-xs font-semibold">Tamaño</label>
@@ -95,7 +96,22 @@
                              <select id="positionSelect" class="w-full mt-1 rounded-lg text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] border border-[var(--input-border-color)] bg-transparent h-10 p-2" disabled></select>
                         </div>
                     </div>
-                    <!-- *** NUEVA SECCIÓN DE ACCIONES *** -->
+
+                    <!-- Branding -->
+                     <div class="p-4 rounded-lg bg-[var(--surface-color)] border border-[var(--input-border-color)]">
+                        <label class="font-semibold mb-2 block">Branding</label>
+                        <div class="flex items-center justify-between">
+                            <img id="logo-preview" src="" alt="Logo" class="hidden bg-gray-200 dark:bg-gray-700 p-1 rounded">
+                            <label for="logoUpload" class="h-10 px-4 rounded-lg bg-[var(--secondary-color)] text-white text-sm font-bold cursor-pointer inline-flex items-center">Subir Logo</label>
+                            <input type="file" id="logoUpload" class="hidden" accept="image/png, image/jpeg">
+                        </div>
+                        <div class="flex items-center mt-2">
+                            <input type="checkbox" id="addLogoToggle" class="h-4 w-4 rounded text-[var(--primary-color)] focus:ring-[var(--primary-color)]" disabled>
+                            <label for="addLogoToggle" class="ml-2 text-sm">Añadir logo a la imagen</label>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
                     <div class="p-4 rounded-lg bg-[var(--surface-color)] border border-[var(--input-border-color)] space-y-2">
                          <label class="font-semibold mb-1 block">Acciones</label>
                          <button id="downloadBtn" class="w-full h-10 bg-[var(--primary-color)] text-white font-bold text-sm rounded-lg disabled:bg-gray-400" disabled>Descargar Imagen</button>
@@ -122,22 +138,23 @@ const firebaseConfig = { apiKey: "AIzaSyAbahVsQxI_HOz_yPtDlp4hXSdZO0dvRl4", auth
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
-// *** IMPORTANTE: CAMBIA ESTA CONTRASEÑA ***
-const ADMIN_PASSWORD = "Bureau2025"; // Por ejemplo: "BVAdmin2024!"
+const ADMIN_PASSWORD = "Bureau2025"; 
 
 const get = id => document.getElementById(id);
 const channelIdInput = get('channelId'), connectBtn = get('connectBtn'), statusDiv = get('status');
-const textInput = get('textInput'), fontSizeInput = get('fontSizeInput'), positionSelect = get('positionSelect');
+const prefixInput = get('prefixInput'), requestNumberInput = get('requestNumberInput'), incrementBtn = get('incrementBtn');
+const fontSizeInput = get('fontSizeInput'), positionSelect = get('positionSelect');
 const downloadBtn = get('downloadBtn'), cropBtn = get('cropBtn'), rotateBtn = get('rotateBtn');
 const drawModeBtn = get('drawModeBtn'), resetImageBtn = get('resetImageBtn'), undoBtn = get('undoBtn');
 const canvas = get('canvas'), ctx = canvas.getContext('2d'), placeholderText = get('placeholderText');
 const themeToggle = get('themeToggle'), qrContainer = get('qrContainer');
 const adminClearDbBtn = get('adminClearDbBtn');
+const logoUpload = get('logoUpload'), logoPreview = get('logo-preview'), addLogoToggle = get('addLogoToggle');
 
 let currentImage = null, originalImage = null, currentChannelRef = null, lastReceivedTimestamp = 0;
 let isCropping = false, isDrawing = false;
 let cropStartX = 0, cropStartY = 0, cropEndX = 0, cropEndY = 0;
-let history = [];
+let history = [], companyLogo = new Image();
 let toastTimeout;
 
 // --- THEME & UI ---
@@ -147,20 +164,23 @@ function applyTheme(theme) { document.documentElement.classList.toggle('dark', t
 themeToggle.addEventListener('click', () => { const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark'; localStorage.setItem('theme', newTheme); applyTheme(newTheme); });
 function showToast(message, type = 'info', duration = 3000) { const toast = get('toast'), toastMessage = get('toast-message'); clearTimeout(toastTimeout); toastMessage.textContent = message; toast.className = 'toast-notification bg-gray-800 text-white py-3 px-6 rounded-full shadow-lg show'; toast.classList.remove('bg-green-600', 'bg-red-600'); if (type === 'success') toast.classList.add('bg-green-600'); if (type === 'error') toast.classList.add('bg-red-600'); toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, duration); }
 function setButtonLoading(button, isLoading, originalText) { if(!button) return; button.disabled = isLoading; if(isLoading) { button.innerHTML = `<div class="spinner mx-auto"></div>`; } else { button.innerHTML = originalText; } }
-function saveSettings() { const settings = { fontSize: fontSizeInput.value, color: document.querySelector('input[name="color"]:checked').dataset.color, position: positionSelect.value }; localStorage.setItem('desktopPrefs', JSON.stringify(settings)); }
+function saveSettings() { const settings = { fontSize: fontSizeInput.value, color: document.querySelector('input[name="color"]:checked').dataset.color, position: positionSelect.value, prefix: prefixInput.value, number: requestNumberInput.value }; localStorage.setItem('desktopPrefs', JSON.stringify(settings)); }
 function loadSettings() {
     const prefs = JSON.parse(localStorage.getItem('desktopPrefs'));
     if (prefs) {
         fontSizeInput.value = prefs.fontSize || 150; positionSelect.value = prefs.position || 'bottom-right';
         const colorInput = document.querySelector(`input[name="color"][data-color="${prefs.color || 'white'}"]`);
         if (colorInput) colorInput.checked = true;
+        prefixInput.value = prefs.prefix || `${new Date().getFullYear().toString().slice(-2)}-`;
+        requestNumberInput.value = prefs.number || '00001';
+    } else {
+        prefixInput.value = `${new Date().getFullYear().toString().slice(-2)}-`;
     }
 }
 function enableAllControls(enabled) {
-    [textInput, fontSizeInput, positionSelect, downloadBtn, cropBtn, rotateBtn, drawModeBtn, resetImageBtn, ...document.querySelectorAll('.image-filter'), ...document.querySelectorAll('input[name="color"]')].forEach(el => el.disabled = !enabled);
+    [prefixInput, requestNumberInput, incrementBtn, fontSizeInput, positionSelect, downloadBtn, cropBtn, rotateBtn, drawModeBtn, resetImageBtn, addLogoToggle, ...document.querySelectorAll('.image-filter'), ...document.querySelectorAll('input[name="color"]')].forEach(el => el.disabled = !enabled);
     undoBtn.disabled = history.length <= 1;
 }
-
 function saveState() { history.push(canvas.toDataURL()); if (history.length > 10) history.shift(); undoBtn.disabled = false; }
 function undo() {
     if (history.length <= 1) { showToast('No hay más acciones que deshacer', 'info'); undoBtn.disabled = true; return; }
@@ -169,38 +189,25 @@ function undo() {
     currentImage = lastState; originalImage = lastState; renderCanvas();
     undoBtn.disabled = history.length <= 1;
 }
-
-// *** LÓGICA DE CONEXIÓN CORREGIDA ***
 function connectToChannel() {
     if (currentChannelRef) {
         currentChannelRef.off(); currentChannelRef = null; setUIState(false); showToast('Desconectado de la sala.', 'info'); return;
     }
     let channelId = channelIdInput.value;
     if (!channelId || channelId.length !== 4) { channelId = Math.floor(1000 + Math.random() * 9000).toString(); channelIdInput.value = channelId; }
-    
     setButtonLoading(connectBtn, true, 'Conectar');
     currentChannelRef = database.ref('channels/' + channelId);
-
     const initialData = { imageData: "placeholder", textData: "", timestamp: firebase.database.ServerValue.TIMESTAMP };
     currentChannelRef.set(initialData).then(() => {
         currentChannelRef.on('value', (snapshot) => {
             const data = snapshot.val();
-            if (data && data.timestamp > lastReceivedTimestamp && data.imageData !== "placeholder") { 
-                lastReceivedTimestamp = data.timestamp; 
-                processNewImage(data.imageData); 
-                showToast("¡Nueva imagen recibida!", "success");
-            }
+            if (data && data.timestamp > lastReceivedTimestamp && data.imageData !== "placeholder") { lastReceivedTimestamp = data.timestamp; processNewImage(data.imageData); showToast("¡Nueva imagen recibida!", "success"); }
         });
         setButtonLoading(connectBtn, false, 'Conectar');
         showToast(`Conectado a la sala ${channelId}`, "success");
         localStorage.setItem('lastChannelId', channelId);
         setUIState(true);
-    }).catch(error => {
-        showToast("Error de conexión: " + error.message, "error");
-        setButtonLoading(connectBtn, false, 'Conectar');
-        currentChannelRef = null;
-        setUIState(false);
-    });
+    }).catch(error => { showToast("Error de conexión: " + error.message, "error"); setButtonLoading(connectBtn, false, 'Conectar'); currentChannelRef = null; setUIState(false); });
 }
 function setUIState(isConnected) {
     channelIdInput.disabled = isConnected; connectBtn.textContent = isConnected ? 'Desconectar' : 'Conectar';
@@ -218,19 +225,34 @@ function renderCanvas() {
         ctx.filter = filters;
         ctx.drawImage(img, 0, 0);
         ctx.filter = 'none';
-        const text = textInput.value.trim();
-        if (text) {
-            const fontSize = parseInt(fontSizeInput.value, 10); const position = positionSelect.value;
-            const selectedColor = document.querySelector('input[name="color"]:checked').dataset.color;
+        
+        const fullRequestText = `${prefixInput.value}${requestNumberInput.value}`;
+        const fontSize = parseInt(fontSizeInput.value, 10);
+        const position = positionSelect.value;
+        const selectedColor = document.querySelector('input[name="color"]:checked').dataset.color;
+        const padding = Math.max(20, fontSize / 2);
+        
+        if (fullRequestText) {
             ctx.font = `bold ${fontSize}px Arial`; ctx.fillStyle = selectedColor;
             ctx.strokeStyle = (selectedColor === 'white' || selectedColor === '#E4002B') ? 'black' : 'white';
-            ctx.lineWidth = Math.max(2, fontSize / 12); const padding = Math.max(20, fontSize / 2);
-            const textMetrics = ctx.measureText(text); let x, y;
+            ctx.lineWidth = Math.max(2, fontSize / 12);
+            const textMetrics = ctx.measureText(fullRequestText);
+            let x, y;
             if (position === 'top-left') { x = padding; y = fontSize + padding; }
             else if (position === 'top-right') { x = canvas.width - textMetrics.width - padding; y = fontSize + padding; }
             else if (position === 'bottom-left') { x = padding; y = canvas.height - padding; }
             else { x = canvas.width - textMetrics.width - padding; y = canvas.height - padding; }
-            ctx.strokeText(text, x, y); ctx.fillText(text, x, y);
+            ctx.strokeText(fullRequestText, x, y); ctx.fillText(fullRequestText, x, y);
+        }
+        if (addLogoToggle.checked && companyLogo.src) {
+            const logoHeight = fontSize;
+            const logoWidth = (companyLogo.width / companyLogo.height) * logoHeight;
+            let x, y;
+            if (position === 'bottom-right') { x = padding; y = padding; }
+            else if (position === 'bottom-left') { x = canvas.width - logoWidth - padding; y = padding; }
+            else if (position === 'top-right') { x = padding; y = canvas.height - logoHeight - padding; }
+            else { x = canvas.width - logoWidth - padding; y = canvas.height - logoHeight - padding; }
+            ctx.drawImage(companyLogo, x, y, logoWidth, logoHeight);
         }
     };
     img.src = currentImage;
@@ -271,42 +293,36 @@ function applyCrop() {
     img.onload = () => { tempCtx.drawImage(img, x, y, width, height, 0, 0, width, height); currentImage = tempCanvas.toDataURL('image/jpeg'); renderCanvas(); };
     img.src = canvas.toDataURL();
 }
-// *** NUEVA FUNCIÓN DE ADMINISTRADOR ***
 function adminClearDatabase() {
     const pass = prompt("Introduce la contraseña de administrador para limpiar la base de datos:");
     if (pass === ADMIN_PASSWORD) {
         if (confirm("¿Estás SEGURO de que quieres borrar TODAS las salas y TODAS las imágenes? Esta acción no se puede deshacer.")) {
             const channelsRef = database.ref('channels');
             channelsRef.remove()
-                .then(() => {
-                    showToast("¡Base de datos limpiada con éxito!", "success");
-                    // Si estamos conectados a una sala, nos desconectamos
-                    if(currentChannelRef) connectBtn.click();
-                })
+                .then(() => { showToast("¡Base de datos limpiada con éxito!", "success"); if(currentChannelRef) connectBtn.click(); })
                 .catch(error => showToast("Error al limpiar: " + error.message, "error"));
         }
-    } else if (pass) { // si el usuario escribió algo pero no es correcto
-        showToast("Contraseña incorrecta. Acceso denegado.", "error");
-    }
+    } else if (pass) { showToast("Contraseña incorrecta. Acceso denegado.", "error"); }
 }
 adminClearDbBtn.addEventListener('click', adminClearDatabase);
-
-// --- EVENT LISTENERS ---
 connectBtn.addEventListener('click', connectToChannel);
 rotateBtn.addEventListener('click', rotateBtn);
 resetImageBtn.addEventListener('click', resetImage);
 undoBtn.addEventListener('click', undo);
 drawModeBtn.addEventListener('click', () => { isDrawing = !isDrawing; isCropping = false; drawModeBtn.classList.toggle('active', isDrawing); cropBtn.classList.remove('active'); canvas.style.cursor = isDrawing ? 'crosshair' : 'default'; });
 cropBtn.addEventListener('click', () => { isCropping = !isCropping; isDrawing = false; cropBtn.classList.toggle('active', isCropping); drawModeBtn.classList.remove('active'); canvas.style.cursor = isCropping ? 'crosshair' : 'default'; });
-downloadBtn.addEventListener('click', () => { renderCanvas(); setTimeout(() => { const link = document.createElement('a'); link.download = (textInput.value.trim().replace(/[^a-z0-9-]/gi, '_').toLowerCase() || `imagen_${Date.now()}`) + ".png"; link.href = canvas.toDataURL('image/png'); link.click(); }, 100); });
-[textInput, fontSizeInput, positionSelect, ...document.querySelectorAll('input[name="color"]')].forEach(el => el.addEventListener('input', () => { renderCanvas(); saveSettings(); }));
-document.querySelectorAll('.image-filter').forEach(el => el.addEventListener('input', () => { saveState(); renderCanvas(); }));
-
-// --- INITIALIZATION ---
+downloadBtn.addEventListener('click', () => { renderCanvas(); setTimeout(() => { const link = document.createElement('a'); const fullRequestText = `${prefixInput.value}${requestNumberInput.value}`; link.download = (fullRequestText.trim().replace(/[^a-z0-9-]/gi, '_').toLowerCase() || `imagen_${Date.now()}`) + ".png"; link.href = canvas.toDataURL('image/png'); link.click(); }, 100); });
+[prefixInput, requestNumberInput, fontSizeInput, positionSelect, addLogoToggle, ...document.querySelectorAll('input[name="color"]')].forEach(el => el.addEventListener('input', () => { renderCanvas(); saveSettings(); }));
+document.querySelectorAll('.image-filter').forEach(el => el.addEventListener('input', () => { renderCanvas(); }));
+incrementBtn.addEventListener('click', () => { let numStr = requestNumberInput.value; let num = parseInt(numStr, 10); if (isNaN(num)) num = 0; num++; requestNumberInput.value = num.toString().padStart(numStr.length, '0'); renderCanvas(); saveSettings(); });
+logoUpload.addEventListener('change', (e) => { const file = e.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = (event) => { localStorage.setItem('companyLogo', event.target.result); companyLogo.src = event.target.result; logoPreview.src = event.target.result; logoPreview.classList.remove('hidden'); renderCanvas(); }; reader.readAsDataURL(file); } });
 document.addEventListener('DOMContentLoaded', () => {
     applyTheme(localStorage.getItem('theme') || 'light');
     positionSelect.innerHTML = `<option value="top-left">Superior Izquierda</option><option value="top-right">Superior Derecha</option><option value="bottom-left">Inferior Izquierda</option><option value="bottom-right" selected>Inferior Derecha</option>`;
-    loadSettings(); setUIState(false); enableAllControls(false); setupDrawingAndCropping();
+    loadSettings();
+    const savedLogo = localStorage.getItem('companyLogo');
+    if (savedLogo) { companyLogo.src = savedLogo; logoPreview.src = savedLogo; logoPreview.classList.remove('hidden'); }
+    setUIState(false); enableAllControls(false); setupDrawingAndCropping();
     channelIdInput.value = localStorage.getItem('lastChannelId') || '';
 });
 </script>
