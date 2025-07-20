@@ -3,18 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EDITOR DE CÁMARA - BUREAU VERITAS</title>
-    <!-- Favicon and PWA stuff -->
+    <title>EDITOR DE CÁMARA - LABORATORIO TEXTIL</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-    
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <!-- Library for QR Code Generation -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1/build/qrcode.min.js"></script>
-
     <style>
         :root { /* Light Theme */
             --primary-color: #E4002B; --secondary-color: #424242; --background-color: #F8F9FA;
@@ -32,6 +28,7 @@
         .toast-notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); z-index: 5001; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .toast-notification.show { bottom: 20px; }
         .cropping #canvas { cursor: crosshair; }
+        #logo-preview { max-width: 100px; max-height: 40px; object-fit: contain; }
     </style>
 </head>
 <body class="min-h-screen">
@@ -39,8 +36,8 @@
         <!-- HEADER -->
         <header class="flex items-center justify-between p-4 border-b border-[var(--input-border-color)] flex-shrink-0">
              <h1 class="text-[var(--text-color)] text-lg font-bold tracking-tight">
-                <span style="color: var(--primary-color);">EDITOR DE CÁMARA</span>
-                <span class="text-[var(--text-secondary-color)]">BUREAU VERITAS CPS LUGO</span>
+                <span style="color: var(--primary-color);">EDITOR DE MUESTRAS</span>
+                <span class="text-[var(--text-secondary-color)]">LABORATORIO TEXTIL</span>
             </h1>
             <button id="themeToggle" class="p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" title="Cambiar tema"></button>
         </header>
@@ -56,10 +53,7 @@
                             <input type="number" id="channelId" placeholder="Código de 4 dígitos" class="w-full rounded-lg text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] border border-[var(--input-border-color)] bg-transparent h-10 p-2">
                             <button id="connectBtn" class="relative flex-shrink-0 h-10 px-4 rounded-lg bg-[var(--primary-color)] text-white font-bold disabled:bg-gray-400">Conectar</button>
                         </div>
-                        <div id="qrContainer" class="mt-4 text-center hidden">
-                            <canvas id="qrCanvas"></canvas>
-                            <p class="text-xs text-[var(--text-secondary-color)] mt-2">Escanea este código desde el móvil</p>
-                        </div>
+                        <div id="qrContainer" class="mt-4 text-center hidden"><canvas id="qrCanvas"></canvas><p class="text-xs text-[var(--text-secondary-color)] mt-2">Escanea este código desde el móvil</p></div>
                         <div id="status" class="text-center text-sm font-semibold mt-3">Desconectado</div>
                     </div>
 
@@ -67,30 +61,22 @@
                      <div class="p-4 rounded-lg bg-[var(--surface-color)] border border-[var(--input-border-color)]">
                         <label class="font-semibold mb-2 block">Herramientas</label>
                          <div class="grid grid-cols-5 gap-2 text-center">
-                            <button id="undoBtn" title="Deshacer" class="tool-btn p-2 rounded-lg text-[var(--secondary-color)] bg-gray-100 dark:bg-gray-700 disabled:opacity-50" disabled>
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8a5 5 0 0 1 0 10H9" /></svg>
-                            </button>
+                            <button id="undoBtn" title="Deshacer" class="tool-btn p-2 rounded-lg text-[var(--secondary-color)] bg-gray-100 dark:bg-gray-700 disabled:opacity-50" disabled><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8a5 5 0 0 1 0 10H9" /></svg></button>
                             <button id="rotateBtn" title="Rotar" class="tool-btn p-2 rounded-lg text-[var(--secondary-color)] bg-gray-100 dark:bg-gray-700 disabled:opacity-50" disabled><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M4 20h5v-5M20 4h-5v5" /></svg></button>
-                            <button id="cropBtn" title="Recortar" class="tool-btn p-2 rounded-lg text-[var(--secondary-color)] bg-gray-100 dark:bg-gray-700 disabled:opacity-50" disabled><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 mx-auto"><path d="M7.5 3.375c0-1.036.84-1.875 1.875-1.875h.375a3.75 3.75 0 013.75 3.75v1.875h-1.5V7.125a2.25 2.25 0 00-2.25-2.25h-.375a.375.375 0 00-.375.375V18h-1.5V3.375z" /><path d="M15 5.25a2.25 2.25 0 012.25 2.25v10.5h1.5V7.5a3.75 3.75 0 00-3.75-3.75h-.375a1.875 1.875 0 00-1.875 1.875v12.75h1.5V5.25z" /></svg></button>
+                            <button id="cropBtn" title="Recortar" class="tool-btn p-2 rounded-lg text-[var(--secondary-color)] bg-gray-100 dark:bg-gray-700 disabled:opacity-50" disabled><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19M4.879 4.879L9.75 9.75m-4.871 0L19 4.879M4.879 19L19 9.75" /></svg></button>
                             <button id="drawModeBtn" title="Dibujar" class="tool-btn p-2 rounded-lg text-[var(--secondary-color)] bg-gray-100 dark:bg-gray-700 disabled:opacity-50" disabled><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
                             <button id="resetImageBtn" title="Restaurar Imagen Original" class="tool-btn p-2 rounded-lg text-[var(--secondary-color)] bg-gray-100 dark:bg-gray-700 disabled:opacity-50" disabled><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M4 20h5v-5M20 4h-5v5" /></svg></button>
                          </div>
                     </div>
 
-                    <!-- Image Adjustments -->
-                     <div class="p-4 rounded-lg bg-[var(--surface-color)] border border-[var(--input-border-color)]">
-                        <label class="font-semibold mb-2 block">Ajustes de Imagen</label>
-                        <div class="space-y-3">
-                             <div class="slider-container"><label class="text-xs font-semibold">Brillo</label><input type="range" class="image-filter" data-filter="brightness" min="0" max="2" value="1" step="0.05" disabled></div>
-                             <div class="slider-container"><label class="text-xs font-semibold">Contraste</label><input type="range" class="image-filter" data-filter="contrast" min="0" max="2" value="1" step="0.05" disabled></div>
-                             <div class="slider-container"><label class="text-xs font-semibold">Saturación</label><input type="range" class="image-filter" data-filter="saturate" min="0" max="2" value="1" step="0.05" disabled></div>
-                        </div>
-                    </div>
-                    
                     <!-- Text Request -->
                      <div class="p-4 rounded-lg bg-[var(--surface-color)] border border-[var(--input-border-color)]">
-                        <label class="font-semibold mb-2 block">Request</label>
-                         <input type="text" id="textInput" class="w-full rounded-lg text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] border border-[var(--input-border-color)] bg-transparent h-10 p-2" disabled>
+                        <label class="font-semibold mb-2 block">Nº de Registro</label>
+                        <div class="flex items-center gap-2">
+                             <input type="text" id="prefixInput" value="24-" class="w-16 rounded-lg text-center text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] border border-[var(--input-border-color)] bg-transparent h-10 p-2" disabled>
+                             <input type="text" id="requestNumberInput" placeholder="00001" class="flex-grow w-full min-w-0 rounded-lg text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] border border-[var(--input-border-color)] bg-transparent h-10 p-2" disabled>
+                             <button id="incrementBtn" title="Incrementar número" class="flex-shrink-0 flex items-center justify-center rounded-lg h-10 w-10 bg-[var(--secondary-color)] text-white font-bold" disabled>+</button>
+                        </div>
                         <div class="grid grid-cols-2 gap-4 mt-2">
                              <div>
                                 <label for="fontSizeInput" class="text-xs font-semibold">Tamaño</label>
@@ -111,6 +97,20 @@
                         </div>
                     </div>
 
+                    <!-- Branding -->
+                     <div class="p-4 rounded-lg bg-[var(--surface-color)] border border-[var(--input-border-color)]">
+                        <label class="font-semibold mb-2 block">Branding</label>
+                        <div class="flex items-center justify-between">
+                            <img id="logo-preview" src="" alt="Logo" class="hidden bg-gray-200 dark:bg-gray-700 p-1 rounded">
+                            <label for="logoUpload" class="h-10 px-4 rounded-lg bg-[var(--secondary-color)] text-white text-sm font-bold cursor-pointer inline-flex items-center">Subir Logo</label>
+                            <input type="file" id="logoUpload" class="hidden" accept="image/png, image/jpeg">
+                        </div>
+                        <div class="flex items-center mt-2">
+                            <input type="checkbox" id="addLogoToggle" class="h-4 w-4 rounded text-[var(--primary-color)] focus:ring-[var(--primary-color)]" disabled>
+                            <label for="addLogoToggle" class="ml-2 text-sm">Añadir logo a la imagen</label>
+                        </div>
+                    </div>
+
                     <!-- Actions -->
                     <div class="p-4 rounded-lg bg-[var(--surface-color)] border border-[var(--input-border-color)]">
                          <label class="font-semibold mb-2 block">Acciones</label>
@@ -118,8 +118,6 @@
                     </div>
                 </div>
             </aside>
-            
-            <!-- Main Content: Canvas -->
             <main class="flex-1 bg-gray-200 dark:bg-gray-900 flex items-center justify-center p-4">
                 <canvas id="canvas" class="max-w-full max-h-full object-contain shadow-lg"></canvas>
                  <div id="placeholderText" class="text-center text-[var(--text-secondary-color)]">
@@ -129,9 +127,7 @@
             </main>
         </main>
     </div>
-    <div id="toast" class="toast-notification bg-gray-800 text-white py-3 px-6 rounded-full shadow-lg">
-        <span id="toast-message"></span>
-    </div>
+    <div id="toast" class="toast-notification bg-gray-800 text-white py-3 px-6 rounded-full shadow-lg"><span id="toast-message"></span></div>
 <script>
 // --- FIREBASE & APP CONFIG ---
 const firebaseConfig = { apiKey: "AIzaSyAbahVsQxI_HOz_yPtDlp4hXSdZO0dvRl4", authDomain: "camara-app-lugo.firebaseapp.com", databaseURL: "https://camara-app-lugo-default-rtdb.europe-west1.firebasedatabase.app", projectId: "camara-app-lugo", storageBucket: "camara-app-lugo.appspot.com", messagingSenderId: "437448426207", appId: "1:437448426207:web:a9dbecc8cbdb77d0c4df6a" };
@@ -141,17 +137,19 @@ const database = firebase.database();
 // --- DOM ELEMENTS ---
 const get = id => document.getElementById(id);
 const channelIdInput = get('channelId'), connectBtn = get('connectBtn'), statusDiv = get('status');
-const textInput = get('textInput'), fontSizeInput = get('fontSizeInput'), positionSelect = get('positionSelect');
+const prefixInput = get('prefixInput'), requestNumberInput = get('requestNumberInput'), incrementBtn = get('incrementBtn');
+const fontSizeInput = get('fontSizeInput'), positionSelect = get('positionSelect');
 const downloadBtn = get('downloadBtn'), cropBtn = get('cropBtn'), rotateBtn = get('rotateBtn');
 const drawModeBtn = get('drawModeBtn'), resetImageBtn = get('resetImageBtn'), undoBtn = get('undoBtn');
 const canvas = get('canvas'), ctx = canvas.getContext('2d'), placeholderText = get('placeholderText');
 const themeToggle = get('themeToggle'), qrContainer = get('qrContainer');
+const logoUpload = get('logoUpload'), logoPreview = get('logo-preview'), addLogoToggle = get('addLogoToggle');
 
 // --- APP STATE ---
 let currentImage = null, originalImage = null, currentChannelRef = null, lastReceivedTimestamp = 0;
 let isCropping = false, isDrawing = false;
 let cropStartX = 0, cropStartY = 0, cropEndX = 0, cropEndY = 0;
-let history = [];
+let history = [], companyLogo = new Image();
 let toastTimeout;
 
 // --- THEME & UI ---
@@ -161,41 +159,61 @@ function applyTheme(theme) { document.documentElement.classList.toggle('dark', t
 themeToggle.addEventListener('click', () => { const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark'; localStorage.setItem('theme', newTheme); applyTheme(newTheme); });
 function showToast(message, type = 'info', duration = 3000) { const toast = get('toast'), toastMessage = get('toast-message'); clearTimeout(toastTimeout); toastMessage.textContent = message; toast.className = 'toast-notification bg-gray-800 text-white py-3 px-6 rounded-full shadow-lg show'; toast.classList.remove('bg-green-600', 'bg-red-600'); if (type === 'success') toast.classList.add('bg-green-600'); if (type === 'error') toast.classList.add('bg-red-600'); toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, duration); }
 function setButtonLoading(button, isLoading, originalText) { if(!button) return; button.disabled = isLoading; if(isLoading) { button.innerHTML = `<div class="spinner mx-auto"></div>`; } else { button.innerHTML = originalText; } }
-function saveSettings() { const settings = { fontSize: fontSizeInput.value, color: document.querySelector('input[name="color"]:checked').dataset.color, position: positionSelect.value }; localStorage.setItem('desktopPrefs', JSON.stringify(settings)); }
+function saveSettings() { const settings = { fontSize: fontSizeInput.value, color: document.querySelector('input[name="color"]:checked').dataset.color, position: positionSelect.value, prefix: prefixInput.value, number: requestNumberInput.value }; localStorage.setItem('desktopPrefs', JSON.stringify(settings)); }
 function loadSettings() {
     const prefs = JSON.parse(localStorage.getItem('desktopPrefs'));
     if (prefs) {
         fontSizeInput.value = prefs.fontSize || 150; positionSelect.value = prefs.position || 'bottom-right';
         const colorInput = document.querySelector(`input[name="color"][data-color="${prefs.color || 'white'}"]`);
         if (colorInput) colorInput.checked = true;
+        prefixInput.value = prefs.prefix || `${new Date().getFullYear().toString().slice(-2)}-`;
+        requestNumberInput.value = prefs.number || '00001';
+    } else {
+        prefixInput.value = `${new Date().getFullYear().toString().slice(-2)}-`;
     }
 }
 function enableAllControls(enabled) {
-    [textInput, fontSizeInput, positionSelect, downloadBtn, cropBtn, rotateBtn, drawModeBtn, resetImageBtn, undoBtn, ...document.querySelectorAll('.image-filter'), ...document.querySelectorAll('input[name="color"]')].forEach(el => el.disabled = !enabled);
-    undoBtn.disabled = history.length === 0;
+    [prefixInput, requestNumberInput, incrementBtn, fontSizeInput, positionSelect, downloadBtn, cropBtn, rotateBtn, drawModeBtn, resetImageBtn, undoBtn, addLogoToggle, ...document.querySelectorAll('.image-filter'), ...document.querySelectorAll('input[name="color"]')].forEach(el => el.disabled = !enabled);
+    undoBtn.disabled = history.length <= 1;
 }
 
 // --- HISTORY & UNDO ---
-function saveState() {
-    history.push(canvas.toDataURL());
-    if (history.length > 10) history.shift(); // Limit history size
-    undoBtn.disabled = false;
-}
+function saveState() { history.push(canvas.toDataURL()); if (history.length > 10) history.shift(); undoBtn.disabled = false; }
 function undo() {
-    if (history.length <= 1) { // Keep the first state
-        showToast('No hay más acciones que deshacer', 'info');
-        undoBtn.disabled = true;
-        return;
-    }
-    history.pop(); // Remove current state
-    const lastState = history[history.length - 1]; // Get previous state
-    currentImage = lastState;
-    originalImage = lastState; // This state becomes the new "original" for filters
-    renderCanvas();
+    if (history.length <= 1) { showToast('No hay más acciones que deshacer', 'info'); undoBtn.disabled = true; return; }
+    history.pop();
+    const lastState = history[history.length - 1];
+    currentImage = lastState; originalImage = lastState; renderCanvas();
     undoBtn.disabled = history.length <= 1;
 }
 
 // --- CORE APP LOGIC ---
+function connectToChannel() {
+    if (currentChannelRef) {
+        currentChannelRef.off(); currentChannelRef = null; setUIState(false); showToast('Desconectado de la sala.', 'info'); return;
+    }
+    let channelId = channelIdInput.value;
+    if (!channelId || channelId.length !== 4) { channelId = Math.floor(1000 + Math.random() * 9000).toString(); channelIdInput.value = channelId; }
+    
+    setButtonLoading(connectBtn, true, 'Conectar');
+    currentChannelRef = database.ref('channels/' + channelId);
+
+    const initialData = { imageData: "placeholder", textData: "", timestamp: firebase.database.ServerValue.TIMESTAMP };
+    currentChannelRef.set(initialData).then(() => {
+        currentChannelRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data && data.timestamp > lastReceivedTimestamp && data.imageData !== "placeholder") { 
+                lastReceivedTimestamp = data.timestamp; 
+                processNewImage(data.imageData); 
+                showToast("¡Nueva imagen recibida!", "success");
+            }
+        });
+        setButtonLoading(connectBtn, false, 'Conectar');
+        showToast(`Conectado a la sala ${channelId}`, "success");
+        localStorage.setItem('lastChannelId', channelId);
+        setUIState(true);
+    }).catch(error => { showToast("Error de conexión: " + error.message, "error"); setButtonLoading(connectBtn, false, 'Conectar'); currentChannelRef = null; setUIState(false); });
+}
 function setUIState(isConnected) {
     channelIdInput.disabled = isConnected; connectBtn.textContent = isConnected ? 'Desconectar' : 'Conectar';
     statusDiv.textContent = isConnected ? `Conectado: Sala ${channelIdInput.value}` : 'Desconectado';
@@ -203,28 +221,6 @@ function setUIState(isConnected) {
     qrContainer.classList.toggle('hidden', !isConnected);
     if(isConnected) { QRCode.toCanvas(get('qrCanvas'), channelIdInput.value, { width: 128 }, error => { if (error) console.error(error); }); }
 }
-function connectToChannel() {
-    if (currentChannelRef) {
-        currentChannelRef.off(); currentChannelRef = null; setUIState(false); showToast('Desconectado de la sala.', 'info'); return;
-    }
-    let channelId = channelIdInput.value;
-    if (!channelId || channelId.length !== 4) { channelId = Math.floor(1000 + Math.random() * 9000).toString(); channelIdInput.value = channelId; }
-    setButtonLoading(connectBtn, true, 'Conectar');
-    currentChannelRef = database.ref('channels/' + channelId);
-    currentChannelRef.on('value', (snapshot) => {
-        setButtonLoading(connectBtn, false, 'Desconectar');
-        const data = snapshot.val();
-        if (data && data.timestamp > lastReceivedTimestamp) {
-            lastReceivedTimestamp = data.timestamp; processNewImage(data.imageData); showToast("¡Nueva imagen recibida!", "success");
-        }
-        if(!statusDiv.textContent.includes('Conectado')) {
-            showToast(`Conectado a la sala ${channelId}`, "success"); localStorage.setItem('lastChannelId', channelId);
-        }
-        setUIState(true);
-    }, (error) => { showToast("Error de conexión: " + error.message, "error"); setButtonLoading(connectBtn, false, 'Conectar'); currentChannelRef = null; setUIState(false); });
-}
-
-// --- IMAGE PROCESSING & DRAWING ---
 function renderCanvas() {
     if (!currentImage) return;
     const img = new Image();
@@ -234,22 +230,38 @@ function renderCanvas() {
         ctx.filter = filters;
         ctx.drawImage(img, 0, 0);
         ctx.filter = 'none';
-        const text = textInput.value.trim();
-        if (text) {
-            const fontSize = parseInt(fontSizeInput.value, 10);
-            const position = positionSelect.value;
-            const selectedColor = document.querySelector('input[name="color"]:checked').dataset.color;
+        
+        const fullRequestText = `${prefixInput.value}${requestNumberInput.value}`;
+        const fontSize = parseInt(fontSizeInput.value, 10);
+        const position = positionSelect.value;
+        const selectedColor = document.querySelector('input[name="color"]:checked').dataset.color;
+        const padding = Math.max(20, fontSize / 2);
+        
+        // Draw Text
+        if (fullRequestText) {
             ctx.font = `bold ${fontSize}px Arial`; ctx.fillStyle = selectedColor;
             ctx.strokeStyle = (selectedColor === 'white' || selectedColor === '#E4002B') ? 'black' : 'white';
             ctx.lineWidth = Math.max(2, fontSize / 12);
-            const padding = Math.max(20, fontSize / 2);
-            const textMetrics = ctx.measureText(text);
+            const textMetrics = ctx.measureText(fullRequestText);
             let x, y;
             if (position === 'top-left') { x = padding; y = fontSize + padding; }
             else if (position === 'top-right') { x = canvas.width - textMetrics.width - padding; y = fontSize + padding; }
             else if (position === 'bottom-left') { x = padding; y = canvas.height - padding; }
             else { x = canvas.width - textMetrics.width - padding; y = canvas.height - padding; }
-            ctx.strokeText(text, x, y); ctx.fillText(text, x, y);
+            ctx.strokeText(fullRequestText, x, y); ctx.fillText(fullRequestText, x, y);
+        }
+        
+        // Draw Logo
+        if (addLogoToggle.checked && companyLogo.src) {
+            const logoHeight = fontSize;
+            const logoWidth = (companyLogo.width / companyLogo.height) * logoHeight;
+            let x, y;
+            // Place logo on opposite corner of text
+            if (position === 'bottom-right') { x = padding; y = padding; } // Text bottom-right, logo top-left
+            else if (position === 'bottom-left') { x = canvas.width - logoWidth - padding; y = padding; } // Text bottom-left, logo top-right
+            else if (position === 'top-right') { x = padding; y = canvas.height - logoHeight - padding; } // Text top-right, logo bottom-left
+            else { x = canvas.width - logoWidth - padding; y = canvas.height - logoHeight - padding; } // Text top-left, logo bottom-right
+            ctx.drawImage(companyLogo, x, y, logoWidth, logoHeight);
         }
     };
     img.src = currentImage;
@@ -291,23 +303,53 @@ function applyCrop() {
     img.src = canvas.toDataURL();
 }
 
-// --- EVENT LISTENERS ---
+// --- Event Listeners ---
 connectBtn.addEventListener('click', connectToChannel);
 rotateBtn.addEventListener('click', rotateImage);
 resetImageBtn.addEventListener('click', resetImage);
 undoBtn.addEventListener('click', undo);
 drawModeBtn.addEventListener('click', () => { isDrawing = !isDrawing; isCropping = false; drawModeBtn.classList.toggle('active', isDrawing); cropBtn.classList.remove('active'); canvas.style.cursor = isDrawing ? 'crosshair' : 'default'; });
 cropBtn.addEventListener('click', () => { isCropping = !isCropping; isDrawing = false; cropBtn.classList.toggle('active', isCropping); drawModeBtn.classList.remove('active'); canvas.style.cursor = isCropping ? 'crosshair' : 'default'; });
-downloadBtn.addEventListener('click', () => { renderCanvas(); setTimeout(() => { const link = document.createElement('a'); link.download = (textInput.value.trim().replace(/[^a-z0-9-]/gi, '_').toLowerCase() || `imagen_${Date.now()}`) + ".png"; link.href = canvas.toDataURL('image/png'); link.click(); }, 100); });
-[textInput, fontSizeInput, positionSelect, ...document.querySelectorAll('input[name="color"]')].forEach(el => el.addEventListener('input', () => { renderCanvas(); saveSettings(); }));
-document.querySelectorAll('.image-filter').forEach(el => el.addEventListener('input', () => { saveState(); renderCanvas(); }));
+downloadBtn.addEventListener('click', () => { renderCanvas(); setTimeout(() => { const link = document.createElement('a'); const fullRequestText = `${prefixInput.value}${requestNumberInput.value}`; link.download = (fullRequestText.trim().replace(/[^a-z0-9-]/gi, '_').toLowerCase() || `imagen_${Date.now()}`) + ".png"; link.href = canvas.toDataURL('image/png'); link.click(); }, 100); });
+[prefixInput, requestNumberInput, fontSizeInput, positionSelect, addLogoToggle, ...document.querySelectorAll('input[name="color"]')].forEach(el => el.addEventListener('input', () => { renderCanvas(); saveSettings(); }));
+document.querySelectorAll('.image-filter').forEach(el => el.addEventListener('input', () => { renderCanvas(); }));
+incrementBtn.addEventListener('click', () => {
+    let numStr = requestNumberInput.value;
+    let num = parseInt(numStr, 10);
+    if (isNaN(num)) num = 0;
+    num++;
+    requestNumberInput.value = num.toString().padStart(numStr.length, '0');
+    renderCanvas();
+    saveSettings();
+});
+logoUpload.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            localStorage.setItem('companyLogo', event.target.result);
+            companyLogo.src = event.target.result;
+            logoPreview.src = event.target.result;
+            logoPreview.classList.remove('hidden');
+            renderCanvas();
+        };
+        reader.readAsDataURL(file);
+    }
+});
 
-// --- INITIALIZATION ---
+// --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
     applyTheme(localStorage.getItem('theme') || 'light');
-    positionSelect.innerHTML = `<option value="top-left">Superior Izquierda</option><option value="top-right">Superior Derecha</option><option value="bottom-left">Inferior Izquierda</option><option value="bottom-right">Inferior Derecha</option>`;
+    positionSelect.innerHTML = `<option value="top-left">Superior Izquierda</option><option value="top-right">Superior Derecha</option><option value="bottom-left">Inferior Izquierda</option><option value="bottom-right" selected>Inferior Derecha</option>`;
     loadSettings();
+    const savedLogo = localStorage.getItem('companyLogo');
+    if (savedLogo) {
+        companyLogo.src = savedLogo;
+        logoPreview.src = savedLogo;
+        logoPreview.classList.remove('hidden');
+    }
     setUIState(false);
+    enableAllControls(false);
     setupDrawingAndCropping();
     channelIdInput.value = localStorage.getItem('lastChannelId') || '';
 });
